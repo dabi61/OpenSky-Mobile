@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+    alias(libs.plugins.kotlin.serialization)
 
 }
 
@@ -77,13 +78,31 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     //Dependency injection
-    implementation("com.google.dagger:hilt-android:2.56.2")
-    ksp("com.google.dagger:hilt-android-compiler:2.56.2")
+    implementation("com.google.dagger:hilt-android:2.57")
+    ksp("com.google.dagger:hilt-android-compiler:2.57")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     //Nav composable
     implementation("androidx.navigation:navigation-compose:2.9.4")
 
     //Preferences
     implementation("androidx.datastore:datastore-preferences:1.1.7")
-    
+
+
+    // Retrofit
+    api(libs.retrofit)
+
+    //Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
+
+    // JavaX Inject
+//    implementation(libs.javax.inject)
+
+    // Moshi Retrofit Converter
+    api(libs.retrofit.converter.moshi)
+
+    implementation(libs.moshi.kotlin)
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.2")
+    implementation(libs.okhttp.loggingInterceptor)
+
 }

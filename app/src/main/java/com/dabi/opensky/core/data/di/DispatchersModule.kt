@@ -22,14 +22,14 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import com.dabi.opensky.core.data.network.Dispatcher
-import com.dabi.opensky.core.data.network.TrueCleanAppDispatchers
+import com.dabi.opensky.core.data.Dispatcher
+import com.dabi.opensky.core.data.OpenSkyAppDispatchers
 
 @Module
 @InstallIn(SingletonComponent::class)
 internal object DispatchersModule {
 
   @Provides
-  @Dispatcher(TrueCleanAppDispatchers.IO)
+  @Dispatcher(OpenSkyAppDispatchers.IO)
   fun providesIODispatcher(): CoroutineDispatcher = Dispatchers.IO
 }

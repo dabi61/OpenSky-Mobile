@@ -12,13 +12,42 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.dabi.opensky.core.navigation.OpenSkyScreen
+import com.dabi.opensky.feature.home.HomeScreen
+import com.dabi.opensky.feature.login.LoginScreen
+import com.dabi.opensky.feature.splash.SplashScreen
 
 
 context(SharedTransitionScope)
-fun NavGraphBuilder.openSkyNavigation() {
-    composable<OpenSkyScreen.Home>
-    {
-//        TrueCleanHomeContent(this)
+fun NavGraphBuilder.openSkyNavigation(
+    navController: NavHostController
+) {
+    composable<OpenSkyScreen.Splash> {
+        SplashScreen(
+            onNavigateToLogin = {
+                navController.navigate(OpenSkyScreen.Login) {
+                    popUpTo(OpenSkyScreen.Splash) { inclusive = true }
+                }
+            },
+            onNavigateToHome = {
+                navController.navigate(OpenSkyScreen.Home) {
+                    popUpTo(OpenSkyScreen.Splash) { inclusive = true }
+                }
+            }
+        )
+    }
+    
+    composable<OpenSkyScreen.Login> {
+        LoginScreen(
+            onLoginSuccess = {
+                navController.navigate(OpenSkyScreen.Home) {
+                    popUpTo(OpenSkyScreen.Login) { inclusive = true }
+                }
+            }
+        )
+    }
+    
+    composable<OpenSkyScreen.Home> {
+        HomeScreen()
     }
 }
 //

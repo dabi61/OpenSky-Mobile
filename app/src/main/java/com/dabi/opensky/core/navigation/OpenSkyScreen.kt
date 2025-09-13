@@ -6,6 +6,12 @@ import kotlinx.serialization.Serializable
 
 sealed interface OpenSkyScreen {
     @Serializable
+    data object Splash : OpenSkyScreen
+    
+    @Serializable
+    data object Login : OpenSkyScreen
+    
+    @Serializable
     data object Home : OpenSkyScreen
 
     @Serializable

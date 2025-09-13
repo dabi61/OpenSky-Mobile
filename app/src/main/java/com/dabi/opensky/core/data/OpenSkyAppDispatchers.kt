@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.dabi.opensky.core.data.network
+package com.dabi.opensky.core.data
 
 import javax.inject.Qualifier
 import kotlin.annotation.AnnotationRetention.RUNTIME

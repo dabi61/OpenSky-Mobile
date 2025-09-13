@@ -30,7 +30,7 @@ fun Modifier.openSkySharedElement(
         this
     } else {
         this.sharedElement(
-            state = sharedContentState,
+            sharedContentState = sharedContentState,
             animatedVisibilityScope = animatedVisibilityScope,
             boundsTransform = boundsTransform,
             placeHolderSize = placeHolderSize,
