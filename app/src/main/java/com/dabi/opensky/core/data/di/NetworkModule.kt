@@ -3,6 +3,7 @@ package com.dabi.opensky.core.data.di
 import android.content.Context
 import com.dabi.opensky.core.auth.TokenAuthenticator
 import com.dabi.opensky.core.data.remote.api.AuthApi
+import com.dabi.opensky.core.data.remote.api.HotelApi
 import com.dabi.opensky.core.data.remote.api.LoginService
 import com.dabi.opensky.core.event.AppEventManager
 import dagger.Module
@@ -83,4 +84,7 @@ object NetworkModule {
 
     @Provides @Singleton
     fun provideLoginService(retrofit: Retrofit): LoginService = retrofit.create(LoginService::class.java)
+
+    @Provides @Singleton
+    fun provideHotelApi(retrofit: Retrofit): HotelApi = retrofit.create(HotelApi::class.java)
 }

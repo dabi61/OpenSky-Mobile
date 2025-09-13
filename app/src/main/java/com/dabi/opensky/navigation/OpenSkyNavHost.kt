@@ -1,7 +1,10 @@
 package com.dabi.opensky.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -12,7 +15,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.dabi.opensky.core.navigation.OpenSkyScreen
-import com.dabi.opensky.feature.login.LoginViewModel
+import com.dabi.opensky.feature.main.MainScreen
 import com.dabi.opensky.feature.session.SessionViewModel
 import com.dabi.opensky.feature.session.TokenExpiredDialog
 
@@ -24,8 +27,7 @@ fun OpenSkyNavHost(
     sessionViewModel: SessionViewModel = hiltViewModel()
 ) {
     val sessionUiState by sessionViewModel.uiState.collectAsState()
-    val isLoggedIn by sessionViewModel.isLoggedIn.collectAsState(initial = null)
-    
+
     // Always start with splash screen
     val startDestination = OpenSkyScreen.Splash
     
@@ -39,15 +41,17 @@ fun OpenSkyNavHost(
         }
     }
     
-    SharedTransitionLayout {
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = modifier
-        ) {
-            openSkyNavigation(navController)
+        MainScreen(navController = navController) { paddingValues ->
+            SharedTransitionLayout {
+                NavHost(
+                    navController = navController,
+                    startDestination = startDestination,
+                    modifier = modifier.padding(paddingValues)
+                ) {
+                    openSkyNavigation(navController)
+                }
+            }
         }
-    }
     
     // Show token expired dialog
     if (sessionUiState.showTokenExpiredDialog) {

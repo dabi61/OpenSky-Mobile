@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dabi.opensky.feature.login.LoginViewModel
+import com.dabi.opensky.feature.session.SessionViewModel
 import kotlinx.coroutines.delay
 
 @Composable
@@ -18,9 +18,9 @@ fun SplashScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToHome: () -> Unit,
     modifier: Modifier = Modifier,
-    loginViewModel: LoginViewModel = hiltViewModel()
+    sessionViewModel: SessionViewModel = hiltViewModel()
 ) {
-    val isLoggedIn by loginViewModel.isLoggedIn.collectAsStateWithLifecycle(initialValue = null)
+    val isLoggedIn by sessionViewModel.isLoggedIn.collectAsStateWithLifecycle(initialValue = null)
     
     // Wait for authentication state to be determined
     LaunchedEffect(isLoggedIn) {

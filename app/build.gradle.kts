@@ -104,5 +104,8 @@ dependencies {
     implementation(libs.moshi.kotlin)
     ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.2")
     implementation(libs.okhttp.loggingInterceptor)
+    
+    // Image loading
+    implementation("io.coil-kt:coil-compose:2.7.0")
 
 }
