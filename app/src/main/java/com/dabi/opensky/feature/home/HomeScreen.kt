@@ -9,12 +9,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.dabi.opensky.feature.login.LoginViewModel
+import com.dabi.opensky.feature.session.SessionViewModel
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    loginViewModel: LoginViewModel = hiltViewModel()
+    sessionViewModel: SessionViewModel = hiltViewModel()
 ) {
     Column(
         modifier = modifier
@@ -41,7 +41,7 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(32.dp))
         
         Button(
-            onClick = { loginViewModel.logout() },
+            onClick = { sessionViewModel.logout() },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.error
             )

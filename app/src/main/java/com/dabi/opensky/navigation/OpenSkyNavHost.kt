@@ -30,12 +30,12 @@ fun OpenSkyNavHost(
     val startDestination = OpenSkyScreen.Splash
     
     // Handle logout navigation
-    LaunchedEffect(isLoggedIn) {
-        // Only navigate if we're not on splash and user logged out
-        if (isLoggedIn == false && navController.currentBackStackEntry?.destination?.route != OpenSkyScreen.Splash::class.qualifiedName) {
+    LaunchedEffect(sessionUiState.shouldNavigateToLogin) {
+        if (sessionUiState.shouldNavigateToLogin) {
             navController.navigate(OpenSkyScreen.Login) {
                 popUpTo(0) { inclusive = true }
             }
+            sessionViewModel.onNavigatedToLogin()
         }
     }
     

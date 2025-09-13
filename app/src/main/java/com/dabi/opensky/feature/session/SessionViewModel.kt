@@ -14,7 +14,8 @@ import javax.inject.Inject
 
 data class SessionUiState(
     val showTokenExpiredDialog: Boolean = false,
-    val isSessionValid: Boolean? = null // null = loading, true = valid, false = invalid
+    val isSessionValid: Boolean? = null, // null = loading, true = valid, false = invalid
+    val shouldNavigateToLogin: Boolean = false
 )
 
 @HiltViewModel
@@ -53,7 +54,13 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.logout()
             dismissTokenExpiredDialog()
+            // Trigger navigation to login
+            _uiState.value = _uiState.value.copy(shouldNavigateToLogin = true)
         }
+    }
+
+    fun onNavigatedToLogin() {
+        _uiState.value = _uiState.value.copy(shouldNavigateToLogin = false)
     }
 
     companion object {
