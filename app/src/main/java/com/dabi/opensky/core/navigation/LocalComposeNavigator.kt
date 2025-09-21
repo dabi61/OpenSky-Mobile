@@ -4,11 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
-import com.dabi.navigation.TrueCleanScreen
 
 
 //Nguồn cung cấp navigator trong  mặc định ném lỗi nếu như không tìm thấy
-val LocalComposeNavigator : ProvidableCompositionLocal<AppComposeNavigator<TrueCleanScreen>> =
+val LocalComposeNavigator : ProvidableCompositionLocal<AppComposeNavigator<OpenSkyScreen>> =
     compositionLocalOf {
         error(
             "No AppComposeNavigator provided! " +
@@ -20,7 +19,7 @@ val LocalComposeNavigator : ProvidableCompositionLocal<AppComposeNavigator<TrueC
 /**
  * Retrieves the current [AppComposeNavigator] at the call site's position in the hierarchy.
  */
-val currentComposeNavigator: AppComposeNavigator<TrueCleanScreen>
+val currentComposeNavigator: AppComposeNavigator<OpenSkyScreen>
     @Composable
     @ReadOnlyComposable
     get() = LocalComposeNavigator.current

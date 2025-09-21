@@ -4,7 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 @Database(
-//    entities = [MediaEntity::class],
+    entities = [], // Empty entities for now
     version = 1,
     exportSchema = false,
 )

@@ -9,7 +9,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-import kotlin.jvm.java
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -23,8 +22,8 @@ internal object DatabaseModule {
 //        statsResponseConverter: StatsResponseConverter,
     ): OpenSkyDatabase {
         return Room
-            .databaseBuilder(application, OpenSkyDatabase::class.java, "Pokedex.db")
-            .fallbackToDestructiveMigration()
+            .databaseBuilder(application, OpenSkyDatabase::class.java, "OpenSky.db")
+            .fallbackToDestructiveMigration(dropAllTables = true)
 //            .addTypeConverter(typeResponseConverter)
 //            .addTypeConverter(statsResponseConverter)
             .build()

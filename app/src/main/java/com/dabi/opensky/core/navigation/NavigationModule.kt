@@ -13,6 +13,6 @@ internal interface NavigationModule {
     @Binds
     @Singleton
     fun provideComposeNavigator(
-        trueCleanComposeNavigator: TrueCleanComposeNavigator
-    ) : AppComposeNavigator<TrueCleanScreen>
+        openSkyComposeNavigator: OpenSkyComposeNavigator
+    ) : AppComposeNavigator<OpenSkyScreen>
 }

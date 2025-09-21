@@ -6,8 +6,32 @@ import kotlinx.serialization.Serializable
 
 sealed interface OpenSkyScreen {
     @Serializable
+    data object Splash : OpenSkyScreen
+    
+    @Serializable
+    data object Login : OpenSkyScreen
+    
+    // Main App Screens với Bottom Navigation
+    @Serializable
     data object Home : OpenSkyScreen
+    
+    @Serializable
+    data object Search : OpenSkyScreen
+    
+    @Serializable
+    data object Favorites : OpenSkyScreen
+    
+    @Serializable
+    data object Profile : OpenSkyScreen
+    
+    @Serializable
+    data object Settings : OpenSkyScreen
+    
+    // Detail Screens
+    @Serializable
+    data class HotelDetail(val hotelId: String) : OpenSkyScreen
 
+    // Legacy screens (có thể xóa sau)
     @Serializable
     data object LibraryScreen : OpenSkyScreen
 
