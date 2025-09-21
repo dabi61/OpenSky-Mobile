@@ -1,5 +1,6 @@
 package com.dabi.opensky.navigation
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -21,6 +22,7 @@ import androidx.navigation.toRoute
 import com.dabi.opensky.core.navigation.OpenSkyScreen
 import com.dabi.opensky.feature.favorites.FavoritesScreen
 import com.dabi.opensky.feature.home.HomeScreen
+import com.dabi.opensky.feature.hotel.HotelDetailScreen
 import com.dabi.opensky.feature.login.LoginScreen
 import com.dabi.opensky.feature.profile.ProfileScreen
 import com.dabi.opensky.feature.search.SearchScreen
@@ -107,30 +109,11 @@ fun NavGraphBuilder.openSkyNavigation(
     
     composable<OpenSkyScreen.HotelDetail> { backStackEntry ->
         val hotelDetail = backStackEntry.toRoute<OpenSkyScreen.HotelDetail>()
-        // TODO: Create HotelDetailScreen
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Hotel Detail",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Text(
-                    text = "Hotel ID: ${hotelDetail.hotelId}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Button(
-                    onClick = { navController.popBackStack() },
-                    modifier = Modifier.padding(top = 16.dp)
-                ) {
-                    Text("Quay lại")
-                }
-            }
-        }
+//        Log.d("HotelDetailScreen", "Hotel ID: ${hotelDetail.hotelId}")
+        HotelDetailScreen(
+            hotelId = hotelDetail.hotelId,
+            onBackClick = { navController.popBackStack() }
+        )
     }
 }
 //

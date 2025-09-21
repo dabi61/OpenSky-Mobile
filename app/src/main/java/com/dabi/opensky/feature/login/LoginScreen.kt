@@ -2,6 +2,8 @@ package com.dabi.opensky.feature.login
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -52,6 +54,7 @@ fun LoginScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .consumeWindowInsets(WindowInsets.statusBars) // Opt-out of default status bar spacing
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center

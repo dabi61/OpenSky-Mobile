@@ -1,6 +1,8 @@
 package com.dabi.opensky.feature.splash
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,7 +38,9 @@ fun SplashScreen(
     }
     
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .consumeWindowInsets(WindowInsets.statusBars), // Opt-out of default status bar spacing
         contentAlignment = Alignment.Center
     ) {
         Column(

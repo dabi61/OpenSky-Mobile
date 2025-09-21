@@ -7,32 +7,75 @@ import com.squareup.moshi.JsonClass
 data class Hotel(
     @Json(name = "hotelID")
     val hotelID: String,
+    
+    @Json(name = "userID")
+    val userID: String? = null,
+    
     @Json(name = "hotelName")
     val hotelName: String,
+    
+    @Json(name = "description")
+    val description: String? = null,
+    
     @Json(name = "address")
     val address: String,
+    
     @Json(name = "province")
     val province: String,
+    
     @Json(name = "latitude")
-    val latitude: String,
+    val latitude: Double? = null,
+    
     @Json(name = "longitude")
-    val longitude: String,
-    @Json(name = "description")
-    val description: String,
+    val longitude: Double? = null,
+    
     @Json(name = "star")
     val star: Int,
+    
     @Json(name = "status")
-    val status: String,
+    val status: String? = null,
+    
     @Json(name = "createdAt")
-    val createdAt: String?,
+    val createdAt: String,
+    
     @Json(name = "images")
-    val images: List<String>,
+    val images: List<String> = emptyList(),
+    
+    @Json(name = "firstImage")
+    val firstImage: String? = null,
+    
+    @Json(name = "user")
+    val user: User? = null,
+    
+    // Backward compatibility fields - có thể sẽ được thêm từ API khác
     @Json(name = "minPrice")
-    val minPrice: Double,
+    val minPrice: Double? = null,
+    
     @Json(name = "maxPrice")
-    val maxPrice: Double,
+    val maxPrice: Double? = null,
+    
     @Json(name = "totalRooms")
-    val totalRooms: Int,
+    val totalRooms: Int? = null,
+    
     @Json(name = "availableRooms")
-    val availableRooms: Int,
-)
+    val availableRooms: Int? = null,
+) {
+    // Helper properties để backward compatibility
+    val displayImage: String?
+        get() = firstImage ?: images.firstOrNull()
+        
+    val ownerName: String?
+        get() = user?.fullName
+        
+    val displayMinPrice: Double
+        get() = minPrice ?: 0.0
+        
+    val displayMaxPrice: Double  
+        get() = maxPrice ?: 0.0
+        
+    val displayTotalRooms: Int
+        get() = totalRooms ?: 0
+        
+    val displayAvailableRooms: Int
+        get() = availableRooms ?: 0
+}

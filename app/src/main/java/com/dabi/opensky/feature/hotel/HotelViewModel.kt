@@ -2,22 +2,37 @@ package com.dabi.opensky.feature.hotel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dabi.opensky.core.data.remote.Resource
 import com.dabi.opensky.core.data.repository.hotel.HotelRepository
 import com.dabi.opensky.core.model.Hotel
 import com.dabi.opensky.core.model.HotelSearchRequest
 import com.dabi.opensky.core.model.HotelSearchResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+// --- UI State ---
 data class HotelUiState(
     val hotels: List<Hotel> = emptyList(),
     val featuredHotels: List<Hotel> = emptyList(),
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
+    val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
     val searchQuery: String = "",
     val selectedProvince: String? = null,
@@ -29,224 +44,138 @@ data class HotelUiState(
     val totalCount: Int = 0
 )
 
+
+sealed class HotelAction {
+    data object LoadAll : HotelAction()
+    data object LoadMore : HotelAction()
+    data object Refresh : HotelAction()
+    data class QuickSearch(val query: String) : HotelAction()
+    data class AdvancedSearch(
+        val query: String? = null,
+        val province: String? = null,
+        val stars: Int? = null,
+        val minPrice: Double? = null,
+        val maxPrice: Double? = null
+    ) : HotelAction()
+    data class FilterByProvince(val province: String) : HotelAction()
+    data class FilterByProvinceId(val provinceId: Int) : HotelAction()
+    data object ClearError : HotelAction()
+}
+
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HotelViewModel @Inject constructor(
-    private val hotelRepository: HotelRepository
+    private val repo: HotelRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HotelUiState())
-    val uiState: StateFlow<HotelUiState> = _uiState.asStateFlow()
+    private val actions = MutableSharedFlow<HotelAction>(extraBufferCapacity = 64)
 
-    init {
-        loadAllHotels()
-        // Load featured hotels from regular search (first 5 hotels)
-        loadFeaturedHotels()
-    }
+    private val _state = MutableStateFlow(HotelUiState())
+    val state: StateFlow<HotelUiState> = _state.asStateFlow()
 
-    /**
-     * Load featured hotels cho home screen
-     */
-    fun loadFeaturedHotels() {
-        viewModelScope.launch {
-            hotelRepository.getFeaturedHotels(5)
-                .onSuccess { hotels ->
-                    _uiState.value = _uiState.value.copy(featuredHotels = hotels)
-                }
-                .onFailure { error ->
-                    // Don't show error for featured hotels, just log it
-                    println("Failed to load featured hotels: ${error.message}")
-                }
-        }
-    }
-
-    /**
-     * Load all hotels
-     */
-    fun loadAllHotels(page: Int = 1, isLoadMore: Boolean = false) {
-        viewModelScope.launch {
-            println("HotelViewModel: Loading hotels - page: $page, isLoadMore: $isLoadMore")
-            
-            if (isLoadMore) {
-                _uiState.value = _uiState.value.copy(isLoadingMore = true)
-            } else {
-                _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+    // Expose featured as a StateFlow from VM (VM is the one that shares)
+    val featured: StateFlow<List<Hotel>> = repo.getFeaturedHotels()
+        .map { res ->
+            when (res) {
+                is Resource.Success -> res.data
+                is Resource.Error -> emptyList()
+                Resource.Loading -> _state.value.featuredHotels // keep last
             }
-
-            hotelRepository.getAllHotels(page = page, limit = 10)
-                .onSuccess { response ->
-                    println("HotelViewModel: Success - got ${response.hotels.size} hotels")
-                    val currentHotels = if (isLoadMore) _uiState.value.hotels else emptyList()
-                    _uiState.value = _uiState.value.copy(
-                        hotels = currentHotels + response.hotels,
-                        isLoading = false,
-                        isLoadingMore = false,
-                        currentPage = response.page,
-                        hasNextPage = response.hasNextPage,
-                        totalCount = response.totalCount
-                    )
-                }
-                .onFailure { error ->
-                    println("HotelViewModel: Error - ${error.message}")
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        isLoadingMore = false,
-                        errorMessage = error.message ?: "Failed to load hotels"
-                    )
-                }
         }
-    }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /**
-     * Search hotels với query đơn giản
-     */
-    fun searchHotels(query: String) {
-        _uiState.value = _uiState.value.copy(searchQuery = query)
-        
-        if (query.isBlank()) {
-            loadAllHotels()
-            return
-        }
-
+    // Debounced search text → emits actions
+    private val searchText = MutableStateFlow("")
+    init {
+// Single pipeline handling all actions to avoid races
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-
-            hotelRepository.quickSearch(query, 20)
-                .onSuccess { response ->
-                    _uiState.value = _uiState.value.copy(
-                        hotels = response.hotels,
-                        isLoading = false,
-                        currentPage = response.page,
-                        hasNextPage = response.hasNextPage,
-                        totalCount = response.totalCount
-                    )
+            actions
+                .onStart { emit(HotelAction.LoadAll) }
+                .flatMapLatest { act ->
+                    when (act) {
+                        HotelAction.LoadAll -> repo.getAllHotels(page = 1, limit = 20)
+                        HotelAction.LoadMore ->
+                            flowOf(Resource.Error(IllegalStateException("Use Paging3 for load-more")))
+                        is HotelAction.QuickSearch ->
+                            repo.searchHotels(
+                                HotelSearchRequest(
+                                    q = act.query,
+                                    page = 1,
+                                    limit = 20
+                                )
+                            )
+                        is HotelAction.AdvancedSearch ->
+                            repo.searchHotels(
+                                HotelSearchRequest(
+                                    q = act.query,
+                                    province = act.province,
+                                    stars = act.stars,
+                                    minPrice = act.minPrice,
+                                    maxPrice = act.maxPrice,
+                                    page = 1,
+                                    limit = 20
+                                )
+                            )
+                        is HotelAction.FilterByProvince ->
+                            repo.getHotelsByProvince(act.province, page = 1, limit = 20)
+                        is HotelAction.FilterByProvinceId ->
+                            repo.getHotelsByProvinceId(act.provinceId, page = 1, size = 20)
+                        HotelAction.Refresh -> flow {
+                            _state.update { it.copy(isRefreshing = true) }
+                            repo.clearCache()
+                            emitAll(repo.getAllHotels(page = 1, limit = 20))
+                        }
+                        HotelAction.ClearError -> flowOf(Resource.Success(_state.value.toResponse()))
+                    }
                 }
-                .onFailure { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Search failed"
-                    )
+                .collect { res ->
+                    when (res) {
+                        Resource.Loading -> _state.update { it.copy(isLoading = true, errorMessage = null) }
+                        is Resource.Success -> {
+                            val response = res.data
+                            _state.update {
+                                it.copy(
+                                    hotels = response.hotels,
+                                    isLoading = false,
+                                    isRefreshing = false,
+                                    errorMessage = null,
+                                    currentPage = response.page,
+                                    hasNextPage = response.hasNextPage,
+                                    totalCount = response.totalCount
+                                )
+                            }
+                        }
+                        is Resource.Error -> _state.update {
+                            it.copy(isLoading = false, isRefreshing = false, errorMessage = res.cause.message)
+                        }
+                    }
                 }
         }
+
+// Keep featured in state
+        viewModelScope.launch {
+            featured.collect { list -> _state.update { it.copy(featuredHotels = list) } }
+        }
+    }
+    // --- Public API for UI ---
+    fun onSearchTextChanged(q: String) {
+        _state.update { it.copy(searchQuery = q) }
+        searchText.value = q
     }
 
-    /**
-     * Advanced search với filters
-     */
-    fun advancedSearch(
-        query: String? = null,
-        province: String? = null,
-        stars: Int? = null,
-        minPrice: Double? = null,
-        maxPrice: Double? = null
-    ) {
-        _uiState.value = _uiState.value.copy(
-            searchQuery = query ?: "",
-            selectedProvince = province,
-            selectedStars = stars,
-            minPrice = minPrice,
-            maxPrice = maxPrice
+    fun dispatch(action: HotelAction) { actions.tryEmit(action) }
+
+    fun clearError() { actions.tryEmit(HotelAction.ClearError) }
+
+    // Helper to adapt UI state to a fake response when clearing error without fetching
+    private fun HotelUiState.toResponse(): HotelSearchResponse =
+        HotelSearchResponse(
+            hotels = hotels,
+            page = currentPage,
+            limit = 20,
+            totalCount = totalCount,
+            totalPages = if (totalCount == 0) 0 else (totalCount + 19) / 20,
+            hasNextPage = hasNextPage,
+            hasPreviousPage = currentPage > 1
         )
-
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-
-            hotelRepository.advancedSearch(
-                query = query,
-                province = province,
-                stars = stars,
-                minPrice = minPrice,
-                maxPrice = maxPrice,
-                page = 1,
-                limit = 20
-            )
-                .onSuccess { response ->
-                    _uiState.value = _uiState.value.copy(
-                        hotels = response.hotels,
-                        isLoading = false,
-                        currentPage = response.page,
-                        hasNextPage = response.hasNextPage,
-                        totalCount = response.totalCount
-                    )
-                }
-                .onFailure { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Advanced search failed"
-                    )
-                }
-        }
-    }
-
-    /**
-     * Load more hotels (pagination)
-     */
-    fun loadMoreHotels() {
-        if (!_uiState.value.hasNextPage || _uiState.value.isLoadingMore) return
-        
-        val nextPage = _uiState.value.currentPage + 1
-        loadAllHotels(page = nextPage, isLoadMore = true)
-    }
-
-    /**
-     * Get hotels by province
-     */
-    fun getHotelsByProvince(province: String) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isLoading = true, 
-                errorMessage = null,
-                selectedProvince = province
-            )
-
-            hotelRepository.getHotelsByProvince(province)
-                .onSuccess { response ->
-                    _uiState.value = _uiState.value.copy(
-                        hotels = response.hotels,
-                        isLoading = false,
-                        currentPage = response.page,
-                        hasNextPage = response.hasNextPage,
-                        totalCount = response.totalCount
-                    )
-                }
-                .onFailure { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to load hotels by province"
-                    )
-                }
-        }
-    }
-
-    /**
-     * Clear search và reset về all hotels
-     */
-    fun clearSearch() {
-        _uiState.value = _uiState.value.copy(
-            searchQuery = "",
-            selectedProvince = null,
-            selectedStars = null,
-            minPrice = null,
-            maxPrice = null
-        )
-        loadAllHotels()
-    }
-
-    /**
-     * Clear error message
-     */
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(errorMessage = null)
-    }
-
-    /**
-     * Refresh data
-     */
-    fun refresh() {
-        loadFeaturedHotels()
-        if (_uiState.value.searchQuery.isBlank()) {
-            loadAllHotels()
-        } else {
-            searchHotels(_uiState.value.searchQuery)
-        }
-    }
 }

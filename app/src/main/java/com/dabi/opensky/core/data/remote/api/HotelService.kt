@@ -2,6 +2,7 @@ package com.dabi.opensky.core.data.remote.api
 
 import com.dabi.opensky.core.model.Hotel
 import com.dabi.opensky.core.model.HotelSearchResponse
+import com.dabi.opensky.core.model.HotelsByProvinceResponse
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -9,7 +10,7 @@ import retrofit2.http.*
  * Hotel API interface - Token sẽ được tự động thêm bởi AuthInterceptor
  * Base URL: https://opensky-be-production.up.railway.app/
  */
-interface HotelApi {
+interface HotelService {
     
     /**
      * Search hotels với các filter parameters
@@ -30,11 +31,11 @@ interface HotelApi {
     ): Response<HotelSearchResponse>
     
     /**
-     * Get hotel by ID
-     * GET /hotels/{id}
+     * Get hotel by ID với thông tin chi tiết và user
+     * GET /hotels/{hotelId}
      */
-    @GET("hotels/{id}")
-    suspend fun getHotelById(@Path("id") hotelId: String): Response<Hotel>
+    @GET("hotels/{hotelId}")
+    suspend fun getHotelById(@Path("hotelId") hotelId: String): Response<Hotel>
     
     /**
      * Get all hotels (without search filters)
@@ -59,7 +60,18 @@ interface HotelApi {
     ): Response<HotelSearchResponse>
     
     /**
-     * Get hotels by province
+     * Get hotels by province ID với pagination mới
+     * GET /hotels/province/{provinceId}
+     */
+    @GET("hotels/province/{provinceId}")
+    suspend fun getHotelsByProvinceId(
+        @Path("provinceId") provinceId: Int,
+        @Query("page") page: Int = 1,
+        @Query("size") size: Int = 10
+    ): Response<HotelsByProvinceResponse>
+    
+    /**
+     * Get hotels by province name (backward compatibility)
      * GET /hotels/by-province/{province}
      */
     @GET("hotels/by-province/{province}")

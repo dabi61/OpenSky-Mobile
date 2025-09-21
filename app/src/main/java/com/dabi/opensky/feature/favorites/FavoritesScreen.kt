@@ -216,9 +216,9 @@ private fun FavoriteHotelCard(
                     }
                 }
                 
-                if (hotel.description.isNotEmpty()) {
+                hotel.description?.takeIf { it.isNotEmpty() }?.let { description ->
                     Text(
-                        text = hotel.description,
+                        text = description,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
