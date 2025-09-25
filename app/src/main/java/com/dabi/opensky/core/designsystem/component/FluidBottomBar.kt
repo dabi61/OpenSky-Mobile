@@ -1,5 +1,7 @@
-package com.ronalksp.bottomnavigationuidesignliquid.ui.screens
+package com.dabi.opensky.core.designsystem.component
 
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -40,19 +42,24 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import android.graphics.RenderEffect
+import android.graphics.Shader
 import androidx.compose.animation.core.Easing
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.dabi.opensky.R
 import com.dabi.opensky.core.designsystem.theme.DEFAULT_PADDING
 import com.dabi.opensky.core.navigation.OpenSkyScreen
@@ -63,11 +70,11 @@ import kotlin.math.sin
 @RequiresApi(Build.VERSION_CODES.S)
 fun getRenderEffect(): RenderEffect {
     val blurEffect = RenderEffect
-        .createBlurEffect(80f, 80f, android.graphics.Shader.TileMode.MIRROR)
+        .createBlurEffect(80f, 80f, Shader.TileMode.MIRROR)
 
     val alphaMatrix = RenderEffect.createColorFilterEffect(
-        android.graphics.ColorMatrixColorFilter(
-            android.graphics.ColorMatrix(
+        ColorMatrixColorFilter(
+            ColorMatrix(
                 floatArrayOf(
                     1f, 0f, 0f, 0f, 0f,
                     0f, 1f, 0f, 0f, 0f,
@@ -170,7 +177,18 @@ fun Circle(color: Color, animationProgress: Float) {
 
 @Composable
 fun CustomBottomNavigation() {
-    val composeNavigation = currentComposeNavigator
+    val navigator = currentComposeNavigator
+    val navController = navigator.navControllerFlow.collectAsState().value
+
+    // Đọc backstack hiện tại (null-safe)
+    val backStackEntry = if (navController != null) {
+        val entry by navController.currentBackStackEntryAsState()
+        entry
+    } else null
+
+    // Đang ở màn nào?
+    val isHome    = backStackEntry?.destination?.hasRoute<OpenSkyScreen.Home>() == true
+    val isProfile = backStackEntry?.destination?.hasRoute<OpenSkyScreen.Profile>() == true
 
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -183,19 +201,47 @@ fun CustomBottomNavigation() {
             )
             .padding(horizontal = 40.dp)
     ) {
-        listOf(Icons.Filled.Call, Icons.Filled.DateRange).map { image ->
-            IconButton(
-                onClick = {
-                    if (image == Icons.Filled.Call) {
-                        composeNavigation.navigate(OpenSkyScreen.Home)
-                    } else {
-                        composeNavigation.navigate(OpenSkyScreen.Profile)
+        // Nút Home: chỉ click khi KHÁC Home
+        IconButton(
+            enabled = !isHome,
+            onClick = {
+                if (!isHome) {
+                    navigator.navigate(OpenSkyScreen.Home) {
+                        // Nếu Home đã có trong back stack -> pop lên Home (không tạo mới)
+                        popUpTo<OpenSkyScreen.Home>() { inclusive = false }
+                        // Nếu Home đang ở top -> không tạo bản sao
+                        launchSingleTop = true
+                        // Khôi phục state nếu trước đó đã save
+                        restoreState = true
                     }
                 }
-            ) {
-                Icon(imageVector = image, contentDescription = null,
-                    tint = Color.White)
             }
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Call,
+                contentDescription = "Home",
+                tint = Color.White.copy(alpha = if (isHome) 1f else 0.5f)
+            )
+        }
+
+        // Nút Profile: chỉ click khi KHÁC Profile
+        IconButton(
+            enabled = !isProfile,
+            onClick = {
+                if (!isProfile) {
+                    navigator.navigate(OpenSkyScreen.Profile) {
+                        popUpTo<OpenSkyScreen.Profile>() { inclusive = false }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            }
+        ) {
+            Icon(
+                imageVector = Icons.Filled.DateRange,
+                contentDescription = "Profile",
+                tint = Color.White.copy(alpha = if (isProfile) 1f else 0.5f)
+            )
         }
     }
 }
@@ -204,8 +250,9 @@ fun CustomBottomNavigation() {
 fun FabGroup(
     animationProgress: Float = 0f,
     renderEffect: androidx.compose.ui.graphics.RenderEffect? = null,
-    toggleAnimation: () -> Unit = {}
+    toggleAnimation: () -> Unit = {},
 ) {
+    val composeNavigation = currentComposeNavigator
 
     Box(
         modifier = Modifier
@@ -229,7 +276,10 @@ fun FabGroup(
 
                     )
                 ),
-            opacity = LinearEasing.transform(0.2f, 0.7f, animationProgress)
+            opacity = LinearEasing.transform(0.2f, 0.7f, animationProgress),
+            onClick = {
+                composeNavigation.navigate(OpenSkyScreen.Search)
+            }
         )
 
         AnimateFab(

@@ -18,8 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RenderEffect
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -29,14 +27,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.dabi.opensky.core.model.Hotel
-import com.dabi.opensky.core.navigation.currentComposeNavigator
 import com.dabi.opensky.feature.hotel.HotelAction
 import com.dabi.opensky.feature.hotel.HotelViewModel
 import com.dabi.opensky.feature.session.SessionViewModel
-import com.ronalksp.bottomnavigationuidesignliquid.ui.screens.Circle
-import com.ronalksp.bottomnavigationuidesignliquid.ui.screens.CustomBottomNavigation
-import com.ronalksp.bottomnavigationuidesignliquid.ui.screens.FabGroup
-import com.ronalksp.bottomnavigationuidesignliquid.ui.screens.getRenderEffect
+import com.dabi.opensky.core.designsystem.component.CustomBottomNavigation
+import com.dabi.opensky.core.designsystem.component.FabGroup
+import com.dabi.opensky.core.designsystem.component.getRenderEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,12 +53,6 @@ fun HomeScreen(
         targetValue = if (isMenuExtended.value) 1f else 0f,
         animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
         label = "fabProgress"
-    )
-
-    val clickAnimationProgress by animateFloatAsState(
-        targetValue = if (isMenuExtended.value) 1f else 0f,
-        animationSpec = tween(durationMillis = 400, easing = LinearEasing),
-        label = "clickProgress"
     )
 
     val renderEffect = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
