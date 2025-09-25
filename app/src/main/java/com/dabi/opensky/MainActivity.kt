@@ -2,6 +2,7 @@ package com.dabi.opensky
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
@@ -23,10 +24,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge() // Enable edge-to-edge for immersive experience
+        val blue = getColor(R.color.blue)
+        // icon sáng trên nền tối -> dùng .dark(...)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(blue),
+//            navigationBarStyle = SystemBarStyle.dark(blue)
+        )
         WindowInsetsControllerCompat(window, window.decorView).apply {
-            isAppearanceLightStatusBars = true   // false = icon sáng (trắng)
+            isAppearanceLightStatusBars = false   // false = icon sáng (trắng)
         }
+
         setContent {
             // Cấu hình global providers
             CompositionLocalProvider(

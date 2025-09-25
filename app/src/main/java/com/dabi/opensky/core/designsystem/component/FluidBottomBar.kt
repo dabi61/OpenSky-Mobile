@@ -48,6 +48,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -218,7 +221,7 @@ fun CustomBottomNavigation() {
             }
         ) {
             Icon(
-                imageVector = Icons.Filled.Call,
+                imageVector = Icons.Filled.Home,
                 contentDescription = "Home",
                 tint = Color.White.copy(alpha = if (isHome) 1f else 0.5f)
             )
@@ -238,7 +241,7 @@ fun CustomBottomNavigation() {
             }
         ) {
             Icon(
-                imageVector = Icons.Filled.DateRange,
+                imageVector = Icons.Filled.Person,
                 contentDescription = "Profile",
                 tint = Color.White.copy(alpha = if (isProfile) 1f else 0.5f)
             )
@@ -262,7 +265,7 @@ fun FabGroup(
         contentAlignment = Alignment.BottomCenter
     ) {
         AnimateFab(
-            icon = Icons.Default.Place,
+            icon = Icons.Filled.Place,
             modifier = Modifier
                 .padding(
                     PaddingValues(
@@ -283,7 +286,7 @@ fun FabGroup(
         )
 
         AnimateFab(
-            icon = Icons.Default.Settings,
+            icon = Icons.Filled.DateRange,
             modifier = Modifier.padding(
                 PaddingValues(
                     bottom = 88.dp
@@ -299,7 +302,7 @@ fun FabGroup(
         )
 
         AnimateFab(
-            icon = Icons.Default.ShoppingCart,
+            icon = Icons.Default.Settings,
             modifier = Modifier
                 .padding(
                     PaddingValues(

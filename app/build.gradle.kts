@@ -107,5 +107,5 @@ dependencies {
     
     // Image loading
     implementation("io.coil-kt:coil-compose:2.7.0")
-
+//    implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
 }
