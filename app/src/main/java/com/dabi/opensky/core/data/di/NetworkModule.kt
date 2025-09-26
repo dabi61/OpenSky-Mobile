@@ -5,12 +5,14 @@ import com.dabi.opensky.core.auth.TokenAuthenticator
 import com.dabi.opensky.core.data.remote.api.AuthApi
 import com.dabi.opensky.core.data.remote.api.HotelService
 import com.dabi.opensky.core.data.remote.api.LoginService
+import com.dabi.opensky.core.data.remote.api.RoomService
 import com.dabi.opensky.core.event.AppEventManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import com.dabi.opensky.core.data.remote.interceptor.AuthInterceptor
+import com.dabi.opensky.core.model.room.Room
 import com.dabi.opensky.core.session.SessionStore
 import com.dabi.opensky.core.session.SessionStoreImpl
 import com.dabi.opensky.core.session.TokenDataSource
@@ -87,4 +89,7 @@ object NetworkModule {
 
     @Provides @Singleton
     fun provideHotelApi(retrofit: Retrofit): HotelService = retrofit.create(HotelService::class.java)
+
+    @Provides @Singleton
+    fun provideRoomApi(retrofit: Retrofit): RoomService = retrofit.create(RoomService::class.java)
 }

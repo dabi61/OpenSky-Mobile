@@ -3,10 +3,10 @@ package com.dabi.opensky.feature.hotel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dabi.opensky.core.data.remote.Resource
-import com.dabi.opensky.core.data.repository.hotel.HotelRepository
-import com.dabi.opensky.core.model.Hotel
-import com.dabi.opensky.core.model.HotelSearchRequest
-import com.dabi.opensky.core.model.HotelSearchResponse
+import com.dabi.opensky.core.data.repository.HotelRepository
+import com.dabi.opensky.core.model.hotel.Hotel
+import com.dabi.opensky.core.model.hotel.HotelSearchRequest
+import com.dabi.opensky.core.model.hotel.HotelSearchResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview

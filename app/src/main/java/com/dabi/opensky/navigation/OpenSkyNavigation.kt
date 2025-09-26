@@ -107,12 +107,26 @@ fun NavGraphBuilder.openSkyNavigation(
         SettingsScreen()
     }
     
-    composable<OpenSkyScreen.HotelDetail> { backStackEntry ->
+    composable<OpenSkyScreen.HotelDetail>(
+        enterTransition = { fadeIn(tween(300)) },
+        exitTransition = { fadeOut(tween(300)) }
+    ) { backStackEntry ->
         val hotelDetail = backStackEntry.toRoute<OpenSkyScreen.HotelDetail>()
 //        Log.d("HotelDetailScreen", "Hotel ID: ${hotelDetail.hotelId}")
         HotelDetailScreen(
             hotelId = hotelDetail.hotelId,
-            onBackClick = { navController.popBackStack() }
+            onBackClick = { navController.popBackStack() },
+            onSeeRooms = {
+                navController.navigate(OpenSkyScreen.RoomScreen(hotelId = hotelDetail.hotelId))
+            }
+        )
+    }
+
+    composable<OpenSkyScreen.RoomScreen> { backStackEntry ->
+        val hotelDetail = backStackEntry.toRoute<OpenSkyScreen.RoomScreen>()
+//        Log.d("HotelDetailScreen", "Hotel ID: ${hotelDetail.hotelId}")
+        OpenSkyScreen.RoomScreen(
+            hotelId = hotelDetail.hotelId,
         )
     }
 

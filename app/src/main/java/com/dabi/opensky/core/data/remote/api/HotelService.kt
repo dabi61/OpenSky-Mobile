@@ -1,8 +1,8 @@
 package com.dabi.opensky.core.data.remote.api
 
-import com.dabi.opensky.core.model.Hotel
-import com.dabi.opensky.core.model.HotelSearchResponse
-import com.dabi.opensky.core.model.HotelsByProvinceResponse
+import com.dabi.opensky.core.model.hotel.Hotel
+import com.dabi.opensky.core.model.hotel.HotelSearchResponse
+import com.dabi.opensky.core.model.hotel.HotelsByProvinceResponse
 import retrofit2.Response
 import retrofit2.http.*
 

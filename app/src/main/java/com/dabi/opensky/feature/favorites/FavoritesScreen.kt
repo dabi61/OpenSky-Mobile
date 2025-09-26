@@ -16,7 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.dabi.opensky.core.model.Hotel
+import com.dabi.opensky.core.model.hotel.Hotel
 
 @Composable
 fun FavoritesScreen(

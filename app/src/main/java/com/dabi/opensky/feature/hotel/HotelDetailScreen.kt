@@ -1,7 +1,6 @@
 package com.dabi.opensky.feature.hotel
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,9 +29,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.dabi.opensky.core.data.remote.Resource
-import com.dabi.opensky.core.model.Hotel
+import com.dabi.opensky.core.model.hotel.Hotel
 import com.dabi.opensky.core.model.User
 import com.dabi.opensky.R
+import com.dabi.opensky.core.navigation.currentComposeNavigator
 
 /* ---------- Demo UI models cho phần đánh giá ---------- */
 data class HotelReview(
@@ -55,6 +55,7 @@ fun HotelDetailScreen(
     viewModel: HotelDetailViewModel = hiltViewModel()
 ) {
     val hotelState by viewModel.hotelDetail.collectAsStateWithLifecycle()
+    val navigator = currentComposeNavigator
 
     LaunchedEffect(hotelId) { viewModel.loadHotelDetail(hotelId) }
 
@@ -110,6 +111,7 @@ fun HotelDetailScreen(
                     )
                     Text(
                         "Không thể tải thông tin khách sạn",
+                        color = Color.Black,
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(top = 16.dp)
                     )
@@ -287,7 +289,7 @@ private fun HotelMainInfo(hotel: Hotel) {
             text = hotel.hotelName,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = Color.Black
         )
         Spacer(Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -310,7 +312,7 @@ private fun HotelMainInfo(hotel: Hotel) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 Icons.Default.LocationOn, null,
-                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)
+                tint = Color.Black, modifier = Modifier.size(18.dp)
             )
             Text(
                 text = buildString {
@@ -319,7 +321,7 @@ private fun HotelMainInfo(hotel: Hotel) {
                     append(", Việt Nam")
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.Black,
                 modifier = Modifier.padding(start = 6.dp),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -341,13 +343,13 @@ private fun HotelAboutSection(description: String) {
                 "Về chúng tôi",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
+                color = Color.Black
             )
             Spacer(Modifier.height(8.dp))
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.Black,
                 lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
             )
         }
@@ -367,8 +369,8 @@ private fun HeaderImageCarousel(
         modifier = modifier
             .fillMaxWidth()
             .height(220.dp)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp)
+//            .clip(RoundedCornerShape(16.dp))
     ) {
         HorizontalPager(
             state = pagerState,
@@ -468,7 +470,7 @@ private fun ReviewsHeader(onSeeAll: () -> Unit) {
         )
         Spacer(Modifier.weight(1f))
         TextButton(onClick = onSeeAll) {
-            Text("Xem thêm")
+            Text("Xem thêm", color = Color.Black)
         }
     }
 }
@@ -610,17 +612,18 @@ private fun HotelPriceBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                Text("Giá chỉ từ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Giá chỉ từ", style = MaterialTheme.typography.bodySmall, color = Color.Black)
                 Text(
                     text = price.toVnd(),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = Color.Black
                 )
             }
             Button(
                 onClick = onSeeRooms,
                 shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors().copy(containerColor = colorResource(R.color.blue)),
                 contentPadding = PaddingValues(horizontal = 22.dp, vertical = 12.dp)
             ) { Text("Xem phòng") }
         }
