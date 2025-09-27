@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.dabi.opensky.core.data.remote.model.response.AuthResponse
+import com.dabi.opensky.core.data.remote.model.response.User
+import com.dabi.opensky.core.utils.moshi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -24,15 +26,26 @@ class TokenDataSource @Inject constructor(
         val REFRESH = stringPreferencesKey("refresh")
         val ACCESS_EXP = longPreferencesKey("access_exp")
         val REFRESH_EXP = longPreferencesKey("refresh_exp")
+        val USER = stringPreferencesKey("user")
     }
+
+    private val userAdapter = moshi.adapter(User::class.java)
 
     suspend fun read(): AuthResponse {
         val p = ctx.dataStore.data.first()
+        val access = p[K.ACCESS].orEmpty().ifBlank { null }
+        val refresh = p[K.REFRESH].orEmpty().ifBlank { null }
+        val accessExp = p[K.ACCESS_EXP]
+        val refreshExp = p[K.REFRESH_EXP]
+        val userJson = p[K.USER].orEmpty().ifBlank { null }
+        val user = userJson?.let { runCatching { userAdapter.fromJson(it) }.getOrNull() }
+
         return AuthResponse(
-            p[K.ACCESS],
-            p[K.REFRESH],
-            p[K.ACCESS_EXP],
-            p[K.REFRESH_EXP]
+            access = access,
+            refresh = refresh,
+            accessExpSec = accessExp,
+            refreshExpSec = refreshExp,
+            user = user
         )
     }
 
@@ -40,8 +53,11 @@ class TokenDataSource @Inject constructor(
         ctx.dataStore.edit { e ->
             e[K.ACCESS] = t.access ?: ""
             e[K.REFRESH] = t.refresh ?: ""
-            t.accessExpSec?.let { e[K.ACCESS_EXP] = it } ?: e.remove(K.ACCESS_EXP)
-            t.refreshExpSec?.let { e[K.REFRESH_EXP] = it } ?: e.remove(K.REFRESH_EXP)
+            if (t.accessExpSec != null) e[K.ACCESS_EXP] = t.accessExpSec else e.remove(K.ACCESS_EXP)
+            if (t.refreshExpSec != null) e[K.REFRESH_EXP] = t.refreshExpSec else e.remove(K.REFRESH_EXP)
+
+            val userJson = t.user?.let { userAdapter.toJson(it) } ?: ""
+            e[K.USER] = userJson
         }
     }
 

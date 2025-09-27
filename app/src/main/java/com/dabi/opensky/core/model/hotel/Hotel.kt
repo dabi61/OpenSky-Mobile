@@ -80,3 +80,12 @@ data class Hotel(
     val displayAvailableRooms: Int
         get() = availableRooms ?: 0
 }
+
+@JsonClass(generateAdapter = true)
+data class images(
+    @Json(name = "imageId")
+    val imageId: Int,
+    @Json(name = "imageUrl")
+    val image: String
+
+)

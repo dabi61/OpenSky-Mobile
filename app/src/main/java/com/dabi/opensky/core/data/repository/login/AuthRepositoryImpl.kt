@@ -33,7 +33,8 @@ class AuthRepositoryImpl @Inject constructor(
                     access = body.accessToken,
                     refresh = body.refreshToken,
                     accessExpSec = body.accessTokenExpires.toEpochSec(),
-                    refreshExpSec = body.refreshTokenExpires.toEpochSec()
+                    refreshExpSec = body.refreshTokenExpires.toEpochSec(),
+                    user = body.user
                 )
             )
             Result.success(Unit)

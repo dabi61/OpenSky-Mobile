@@ -1,6 +1,8 @@
 package com.dabi.opensky.navigation
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -24,12 +26,14 @@ import com.dabi.opensky.feature.favorites.FavoritesScreen
 import com.dabi.opensky.feature.home.HomeScreen
 import com.dabi.opensky.feature.hotel.HotelDetailScreen
 import com.dabi.opensky.feature.login.LoginScreen
+import com.dabi.opensky.feature.profile.EditProfileScreen
 import com.dabi.opensky.feature.profile.ProfileScreen
 import com.dabi.opensky.feature.search.SearchScreen
 import com.dabi.opensky.feature.settings.SettingsScreen
 import com.dabi.opensky.feature.splash.SplashScreen
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 context(SharedTransitionScope)
 fun NavGraphBuilder.openSkyNavigation(
     navController: NavHostController
@@ -97,7 +101,20 @@ fun NavGraphBuilder.openSkyNavigation(
         enterTransition = { fadeIn(tween(300)) },
         exitTransition = { fadeOut(tween(300)) }
     ) {
-        ProfileScreen()
+        ProfileScreen(
+            onEditDetail = {
+                navController.navigate(OpenSkyScreen.EditProfile)
+            }
+        )
+    }
+
+    composable<OpenSkyScreen.EditProfile>(
+        enterTransition = { fadeIn(tween(300)) },
+        exitTransition = { fadeOut(tween(300)) }
+    ) { backStackEntry ->
+        EditProfileScreen(
+            onBack = { navController.popBackStack() },
+        )
     }
     
     composable<OpenSkyScreen.Settings>(

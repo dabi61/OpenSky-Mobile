@@ -26,6 +26,9 @@ sealed interface OpenSkyScreen {
     
     @Serializable
     data object Settings : OpenSkyScreen
+
+    @Serializable
+    data object EditProfile : OpenSkyScreen
     
     // Detail Screens
     @Serializable

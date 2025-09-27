@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -29,24 +30,30 @@ import com.dabi.opensky.core.designsystem.component.CustomBottomNavigation
 import com.dabi.opensky.core.designsystem.component.FabGroup
 import com.dabi.opensky.core.designsystem.component.getRenderEffect
 import com.dabi.opensky.feature.session.SessionViewModel
+import com.dabi.opensky.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     modifier: Modifier = Modifier,
-    sessionViewModel: SessionViewModel = hiltViewModel()
+    sessionViewModel: SessionViewModel = hiltViewModel(),
+    profileViewModel: ProfileViewModel = hiltViewModel(),
+    onEditDetail: () -> Unit = {}
 ) {
+
+    val user by profileViewModel.user.collectAsStateWithLifecycle()
+
     // Mock data (giữ nguyên)
-    val mockUser = remember {
-        MockUser(
-            name = "Nguyễn Văn A",
-            email = "user@opensky.com",
-            phone = "+84 123 456 789",
-            memberSince = "Tháng 9, 2024",
-            totalBookings = 5,
-            favoriteHotels = 12
-        )
-    }
+//    val user = remember {
+//        user(
+//            name = "Nguyễn Văn A",
+//            email = "user@opensky.com",
+//            phone = "+84 123 456 789",
+//            memberSince = "Tháng 9, 2024",
+//            totalBookings = 5,
+//            favoriteHotels = 12
+//        )
+//    }
 
     // ====== FAB menu state & animations (đồng bộ với HomeScreen) ======
     val isMenuExtended = remember { mutableStateOf(false) }
@@ -85,7 +92,7 @@ fun ProfileScreen(
                 // Header with user info
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                    color = Color.White
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
@@ -95,20 +102,20 @@ fun ProfileScreen(
                         Surface(
                             modifier = Modifier.size(100.dp),
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary
+                            color = Color.Black
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = null,
                                     modifier = Modifier.size(50.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimary
+                                    tint = Color.White
                                 )
                             }
                         }
 
                         Text(
-                            text = mockUser.name,
+                            text = user?.fullName ?: "",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -116,14 +123,14 @@ fun ProfileScreen(
                         )
 
                         Text(
-                            text = mockUser.email,
+                            text = user?.email ?: "",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                             modifier = Modifier.padding(top = 4.dp)
                         )
 
                         Text(
-                            text = "Thành viên từ ${mockUser.memberSince}",
+                            text = "Thành viên từ ${user?.createdAt}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
                             modifier = Modifier.padding(top = 8.dp)
@@ -131,27 +138,27 @@ fun ProfileScreen(
                     }
                 }
 
-                // Stats Cards
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatCard(
-                        title = "Đặt phòng",
-                        value = mockUser.totalBookings.toString(),
-                        icon = Icons.Default.Home,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    StatCard(
-                        title = "Yêu thích",
-                        value = mockUser.favoriteHotels.toString(),
-                        icon = Icons.Default.Favorite,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+//                // Stats Cards
+//                Row(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(16.dp),
+//                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+//                ) {
+//                    StatCard(
+//                        title = "Đặt phòng",
+//                        value = "0",
+//                        icon = Icons.Default.Home,
+//                        modifier = Modifier.weight(1f)
+//                    )
+//
+//                    StatCard(
+//                        title = "Yêu thích",
+//                        value = "0",
+//                        icon = Icons.Default.Favorite,
+//                        modifier = Modifier.weight(1f)
+//                    )
+//                }
 
                 // Menu Items
                 Column(
@@ -168,7 +175,9 @@ fun ProfileScreen(
                         icon = Icons.Default.Person,
                         title = "Thông tin cá nhân",
                         subtitle = "Cập nhật thông tin của bạn",
-                        onClick = { /* TODO */ }
+                        onClick = {
+                            onEditDetail()
+                        }
                     )
 
                     ProfileMenuItem(
@@ -355,17 +364,17 @@ private fun ProfileMenuItem(
                 )
             }
 
-            Icon(
-                Icons.Default.Create,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+//            Icon(
+//                Icons.Default.Create,
+//                contentDescription = null,
+//                modifier = Modifier.size(20.dp),
+//                tint = MaterialTheme.colorScheme.onSurfaceVariant
+//            )
         }
     }
 }
 
-private data class MockUser(
+private data class user(
     val name: String,
     val email: String,
     val phone: String,
