@@ -14,11 +14,13 @@ import com.dabi.opensky.core.data.remote.model.response.User
 import com.dabi.opensky.core.data.repository.ProfileRepository
 import com.dabi.opensky.core.session.SessionStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
 import javax.inject.Inject
@@ -65,25 +67,25 @@ class ProfileViewModel @Inject constructor(
         val current = user.value ?: return
         viewModelScope.launch {
             editState = EditState.Saving
-            val file = avatarUri?.let(resolve)
+            val file = withContext(Dispatchers.IO) { avatarUri?.let(resolve) }
             when(val res = repo.updateProfile(fullName.trim(), phone.trim().ifBlank{null}, citizenId.trim().ifBlank{null}, dob?.toString(), file)){
                 is Resource.Success -> {
-// Map UpdateProfileResponse -> User (cùng schema)
+                    // Map UpdateProfileResponse -> User (cùng schema)
                     val updated = User(
-                        userID = res.data.userID,
-                        email = res.data.email,
-                        fullName = res.data.fullName,
-                        role = res.data.role,
-                        phoneNumber = res.data.phoneNumber,
-                        citizenId = res.data.citizenId,
-                        doB = res.data.dob,
-                        avatarURL = res.data.avatarURL,
+                        userID = res.data.profile.userID,
+                        email = res.data.profile.email,
+                        fullName = res.data.profile.fullName,
+                        role = res.data.profile.role,
+                        phoneNumber = res.data.profile.phoneNumber,
+                        citizenId = res.data.profile.citizenId,
+                        doB = res.data.profile.dob,
+                        avatarURL = res.data.profile.avatarURL,
                         status = current.status,
-                        createdAt = res.data.createdAt
+                        createdAt = res.data.profile.createdAt
                     )
                     // Update SessionStore giữ nguyên token
                     session.setUser(updated)
-                    Log.d("ProfileViewModel", "save: $updated")
+//                    Log.d("ProfileViewModel", "save: $updated")
                     editState = EditState.None
                     isEditing = false
                 }

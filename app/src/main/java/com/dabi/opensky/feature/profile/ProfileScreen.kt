@@ -21,11 +21,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import coil.size.Scale
 import com.dabi.opensky.core.designsystem.component.CustomBottomNavigation
 import com.dabi.opensky.core.designsystem.component.FabGroup
 import com.dabi.opensky.core.designsystem.component.getRenderEffect
@@ -36,9 +39,10 @@ import com.dabi.opensky.R
 @Composable
 fun ProfileScreen(
     modifier: Modifier = Modifier,
-    sessionViewModel: SessionViewModel = hiltViewModel(),
+    sessionViewModel: SessionViewModel,
     profileViewModel: ProfileViewModel = hiltViewModel(),
-    onEditDetail: () -> Unit = {}
+    onEditDetail: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
 
     val user by profileViewModel.user.collectAsStateWithLifecycle()
@@ -104,16 +108,25 @@ fun ProfileScreen(
                             shape = CircleShape,
                             color = Color.Black
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.Person,
+                            if (user?.avatarURL.toString() == null) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.Person,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(50.dp),
+                                        tint = Color.White
+                                    )
+                                }
+                            } else {
+                                AsyncImage(
+                                    model = user?.avatarURL,
                                     contentDescription = null,
-                                    modifier = Modifier.size(50.dp),
-                                    tint = Color.White
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+
                                 )
                             }
                         }
-
                         Text(
                             text = user?.fullName ?: "",
                             style = MaterialTheme.typography.headlineSmall,
@@ -121,7 +134,6 @@ fun ProfileScreen(
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.padding(top = 16.dp)
                         )
-
                         Text(
                             text = user?.email ?: "",
                             style = MaterialTheme.typography.bodyMedium,

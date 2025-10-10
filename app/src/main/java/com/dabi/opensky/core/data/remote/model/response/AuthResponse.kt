@@ -30,7 +30,7 @@ data class User(
     val phoneNumber: String?,
     @Json(name = "citizenId")
     val citizenId: String?,
-    @Json(name = "doB")
+    @Json(name = "dob")
     val doB: String?,
     @Json(name = "avatarURL")
     val avatarURL: String?,

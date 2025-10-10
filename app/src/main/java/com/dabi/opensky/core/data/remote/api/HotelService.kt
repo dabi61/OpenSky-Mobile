@@ -1,6 +1,7 @@
 package com.dabi.opensky.core.data.remote.api
 
 import com.dabi.opensky.core.model.hotel.Hotel
+import com.dabi.opensky.core.model.hotel.HotelDetailResponse
 import com.dabi.opensky.core.model.hotel.HotelSearchResponse
 import com.dabi.opensky.core.model.hotel.HotelsByProvinceResponse
 import retrofit2.Response
@@ -35,7 +36,7 @@ interface HotelService {
      * GET /hotels/{hotelId}
      */
     @GET("hotels/{hotelId}")
-    suspend fun getHotelById(@Path("hotelId") hotelId: String): Response<Hotel>
+    suspend fun getHotelById(@Path("hotelId") hotelId: String): Response<HotelDetailResponse>
     
     /**
      * Get all hotels (without search filters)

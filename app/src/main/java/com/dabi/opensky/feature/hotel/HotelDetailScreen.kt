@@ -1,5 +1,6 @@
 package com.dabi.opensky.feature.hotel
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -29,9 +30,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.dabi.opensky.core.data.remote.Resource
-import com.dabi.opensky.core.model.hotel.Hotel
-import com.dabi.opensky.core.model.User
 import com.dabi.opensky.R
+import com.dabi.opensky.core.model.hotel.HotelDetailResponse
 import com.dabi.opensky.core.navigation.currentComposeNavigator
 
 /* ---------- Demo UI models cho phần đánh giá ---------- */
@@ -49,8 +49,8 @@ data class HotelReview(
 fun HotelDetailScreen(
     hotelId: String,
     onBackClick: () -> Unit,
-    onSeeRooms: (Hotel) -> Unit = {},
-    onSeeAllReviews: (Hotel) -> Unit = {},
+    onSeeRooms: (HotelDetailResponse) -> Unit = {},
+    onSeeAllReviews: (HotelDetailResponse) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HotelDetailViewModel = hiltViewModel()
 ) {
@@ -77,9 +77,9 @@ fun HotelDetailScreen(
         },
         bottomBar = {
             if (hotelState is Resource.Success) {
-                val hotel = (hotelState as Resource.Success<Hotel>).data
+                val hotel = (hotelState as Resource.Success<HotelDetailResponse>).data
                 HotelPriceBar(
-                    price = hotel.minPrice ?: hotel.maxPrice ?: 0.0,
+                    price = 0.0,
                     onSeeRooms = { onSeeRooms(hotel) }
                 )
             }
@@ -144,135 +144,81 @@ fun HotelDetailScreen(
 /* ---------- MAIN CONTENT ---------- */
 @Composable
 private fun HotelDetailContent(
-    hotel: Hotel,
+    hotel: HotelDetailResponse,
     onSeeAllReviews: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Demo reviews (map từ API thực của bạn)
+    // Ảnh header -> List<String>
+    val headerUrls: List<String> = remember(hotel.hotelID) {
+        hotel.images.map { it.imageUrl }
+            .filter { it.isNotBlank() }
+            .distinct()
+    }
+    Log.d("HotelDetailContent", "headerUrls: $headerUrls")
+
+    // Demo reviews (photos: List<String>, avatar từ user)
     val demoReviews = remember(hotel.hotelID) {
         listOf(
             HotelReview(
                 userName = "Hoàng Quang",
-                avatar = hotel.user?.avatarURL,
+                avatar = hotel.user.avatarURL,
                 rating = 5,
                 comment = "Team hướng dẫn nhiệt tình, độc lạ; HDV dễ thương, chăm lo ❤",
-                photos = hotel.images.take(4).ifEmpty { listOfNotNull(hotel.displayImage).take(4) }
+                photos = headerUrls.take(4)
             ),
             HotelReview(
                 userName = "Hoàng Quang",
-                avatar = hotel.user?.avatarURL,
+                avatar = hotel.user.avatarURL,
                 rating = 5,
                 comment = "Team hướng dẫn siêu nhiệt tình, độc-lạ; HDV dễ thương, chu đáo.",
-                photos = hotel.images.takeLast(4).ifEmpty { listOfNotNull(hotel.displayImage).take(4) }
+                photos = headerUrls.drop(2).take(4)
             )
         )
     }
 
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(bottom = 96.dp), // chừa chỗ cho bottom bar
+        contentPadding = PaddingValues(bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         /* Header image */
-        item {
-            val images = buildList {
-                val main = hotel.displayImage
-                if (!main.isNullOrBlank()) add(main)
-                addAll(hotel.images.filter { it.isNotBlank() && it != main })
-            }.distinct()
-
-            HeaderImageCarousel(images = images)
-        }
+        item { HeaderImageCarousel(images = headerUrls) }
 
         /* Title + stars + address */
-        item {
-            HotelMainInfo(hotel)
-        }
+        item { HotelMainInfo(hotel) }
 
         /* About (Về chúng tôi) */
-        hotel.description?.let { desc ->
-            item {
-                HotelAboutSection(description = desc)
-            }
+        if (hotel.description.isNotBlank()) {
+            item { HotelAboutSection(description = hotel.description) }
         }
 
-        /* Owner */
-        hotel.user?.let { owner ->
-            item { OwnerInfoCard(owner = owner) }
-        }
+        /* Owner (user là non-null trong response) */
+        item { OwnerInfoCard(owner = hotel.user) }
 
         /* Reviews block */
+        item { ReviewsHeader(onSeeAll = onSeeAllReviews) }
+        items(demoReviews) { review -> ReviewCard(review = review) }
+
+        /* Location (latitude/longitude là Int non-null -> luôn hiển thị) */
         item {
-            ReviewsHeader(onSeeAll = onSeeAllReviews)
-        }
-        items(demoReviews) { review ->
-            ReviewCard(review = review)
-        }
-
-        /* Location (text) */
-        if (hotel.latitude != null && hotel.longitude != null) {
-            item {
-                Card(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(2.dp)
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text(
-                            "Vị trí",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Tọa độ: ${hotel.latitude}, ${hotel.longitude}",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        // TODO: nhúng MapView nếu cần
-                    }
-                }
-            }
-        }
-
-        /* Room info */
-        if (hotel.totalRooms != null || hotel.availableRooms != null || (hotel.minPrice != null && hotel.maxPrice != null)) {
-            item {
-                Card(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(2.dp)
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text(
-                            "Thông tin phòng",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        hotel.totalRooms?.let {
-                            Text("Tổng số phòng: $it", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        hotel.availableRooms?.let {
-                            Text(
-                                "Phòng trống: $it",
-                                color = if (it > 0) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.error
-                            )
-                        }
-                        if (hotel.minPrice != null && hotel.maxPrice != null) {
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "Giá: ${hotel.minPrice.toVnd()} - ${hotel.maxPrice.toVnd()} / đêm",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
+            Card(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(
+                        "Vị trí",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Tọa độ: ${hotel.latitude}, ${hotel.longitude}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -283,7 +229,9 @@ private fun HotelDetailContent(
 
 
 @Composable
-private fun HotelMainInfo(hotel: Hotel) {
+private fun HotelMainInfo(hotel: HotelDetailResponse) {
+    val stars = hotel.star.coerceIn(0, 5)
+
     Column(Modifier.padding(horizontal = 16.dp)) {
         Text(
             text = hotel.hotelName,
@@ -293,16 +241,16 @@ private fun HotelMainInfo(hotel: Hotel) {
         )
         Spacer(Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            repeat(maxOf(hotel.star, 0)) {
+            repeat(stars) {
                 Icon(
                     Icons.Default.Star, null,
                     tint = Color(0xFFFFC107),
                     modifier = Modifier.size(18.dp)
                 )
             }
-            if (hotel.star > 0) {
+            if (stars > 0) {
                 Text(
-                    text = "  ${hotel.star} / 5",
+                    text = "  $stars / 5",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -310,14 +258,11 @@ private fun HotelMainInfo(hotel: Hotel) {
         }
         Spacer(Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Default.LocationOn, null,
-                tint = Color.Black, modifier = Modifier.size(18.dp)
-            )
+            Icon(Icons.Default.LocationOn, null, tint = Color.Black, modifier = Modifier.size(18.dp))
             Text(
                 text = buildString {
                     append(hotel.address)
-                    if (!hotel.province.isNullOrBlank()) append(", ${hotel.province}")
+                    if (hotel.province.isNotBlank()) append(", ${hotel.province}")
                     append(", Việt Nam")
                 },
                 style = MaterialTheme.typography.bodyMedium,
@@ -362,7 +307,7 @@ private fun HeaderImageCarousel(
     modifier: Modifier = Modifier,
     indicatorAlignment: Alignment = Alignment.BottomCenter
 ) {
-    val safeImages = if (images.isEmpty()) listOf("") else images
+    val safeImages = images.filter { it.isNotBlank() }.ifEmpty { listOf("") }
     val pagerState = rememberPagerState(pageCount = { safeImages.size })
 
     Box(
@@ -370,7 +315,6 @@ private fun HeaderImageCarousel(
             .fillMaxWidth()
             .height(220.dp)
             .padding(horizontal = 16.dp)
-//            .clip(RoundedCornerShape(16.dp))
     ) {
         HorizontalPager(
             state = pagerState,
@@ -385,28 +329,23 @@ private fun HeaderImageCarousel(
                     contentScale = ContentScale.Crop
                 )
             } else {
-                // fallback rỗng
                 Box(
                     Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
-                ) { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                ) { Icon(Icons.Default.Settings, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }
 
-        // shadow gradient nhẹ dưới đáy để nổi chỉ số/indicator
         Box(
-            Modifier
-                .matchParentSize()
-                .background(
-                    Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        0.7f to Color.Transparent,
-                        1f to Color.Black.copy(alpha = 0.20f)
-                    )
+            Modifier.matchParentSize().background(
+                Brush.verticalGradient(
+                    0f to Color.Transparent,
+                    0.7f to Color.Transparent,
+                    1f to Color.Black.copy(alpha = 0.20f)
                 )
+            )
         )
 
-        // indicator + counter
         Row(
             modifier = Modifier
                 .align(indicatorAlignment)
@@ -420,12 +359,6 @@ private fun HeaderImageCarousel(
                 totalDots = safeImages.size,
                 selectedIndex = pagerState.currentPage
             )
-//            Spacer(Modifier.width(10.dp))
-//            Text(
-//                text = "${pagerState.currentPage + 1}/${safeImages.size}",
-//                style = MaterialTheme.typography.labelMedium,
-//                color = Color.White
-//            )
         }
     }
 }
@@ -435,7 +368,7 @@ private fun DotsIndicator(
     totalDots: Int,
     selectedIndex: Int,
     modifier: Modifier = Modifier,
-    activeColor: Color = colorResource(R.color.blue),
+    activeColor: Color = MaterialTheme.colorScheme.primary,
     inactiveColor: Color = Color.White.copy(alpha = 0.6f)
 ) {
     Row(
@@ -551,7 +484,7 @@ private fun ReviewCard(review: HotelReview) {
 
 @Composable
 private fun OwnerInfoCard(
-    owner: User,
+    owner: com.dabi.opensky.core.data.remote.model.response.User,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -581,8 +514,8 @@ private fun OwnerInfoCard(
                     Spacer(Modifier.width(12.dp))
                 }
                 Column {
-                    Text(owner.fullName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(owner.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(owner.fullName.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(owner.email.toString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     owner.phoneNumber?.let {
                         Text("SĐT: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -623,7 +556,7 @@ private fun HotelPriceBar(
             Button(
                 onClick = onSeeRooms,
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors().copy(containerColor = colorResource(R.color.blue)),
+                colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.blue)),
                 contentPadding = PaddingValues(horizontal = 22.dp, vertical = 12.dp)
             ) { Text("Xem phòng") }
         }

@@ -46,7 +46,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onHotelClick: (String) -> Unit = {},
     hotelViewModel: HotelViewModel = hiltViewModel(),
-    sessionViewModel: SessionViewModel = hiltViewModel()
+    sessionViewModel: SessionViewModel
 ) {
 
     val uiState by hotelViewModel.state.collectAsStateWithLifecycle()

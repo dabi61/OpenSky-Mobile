@@ -1,31 +1,34 @@
+// core/data/repository/RoomRepository.kt
 package com.dabi.opensky.core.data.repository.room
 
+import com.dabi.opensky.core.data.remote.Resource
+import com.dabi.opensky.core.data.remote.apiCall
 import com.dabi.opensky.core.data.remote.api.RoomService
-import com.dabi.opensky.core.data.remote.net.toDomain
-import com.dabi.opensky.core.model.room.RoomsPage
-import retrofit2.HttpException
+import com.dabi.opensky.core.model.room.Room
+import com.dabi.opensky.core.model.room.RoomDetailResponse
+import com.dabi.opensky.core.model.room.RoomsResponse
+import com.dabi.opensky.core.model.room.toDomain
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class RoomRepositoryImpl @Inject constructor(
-    private val service: RoomService
-) : RoomRepository {
-    override suspend fun getRoomsOfHotel(hotelId: String, page: Int, pageSize: Int): RoomsPage {
-        val res = service.getAllRoomById(hotelId, page, pageSize)
-        if (!res.isSuccessful) throw HttpException(res)
-        val body = res.body() ?: throw IllegalStateException("Empty body")
-        return RoomsPage(
-            rooms = body.rooms.map { it.toDomain() },
-            currentPage = body.currentPage,
-            pageSize = body.pageSize,
-            totalRooms = body.totalRooms,
-            totalPages = body.totalPages,
-            hasNextPage = body.hasNextPage,
-            hasPreviousPage = body.hasPreviousPage
-        )
+    private val api: RoomService
+): RoomRepository {
+    override suspend fun getRoomsByHotel(
+        hotelId: String,
+        page: Int,
+        limit: Int
+    ): Flow<Resource<Pair<List<Room>, RoomsResponse>>> = flow {
+        emit(Resource.Loading)
+        when (val res = apiCall { api.getRoomsByHotel(hotelId, page, limit) }) {
+            is Resource.Success -> emit(Resource.Success(res.data.rooms.map { it.toDomain() } to res.data))
+            is Resource.Error -> emit(res)
+            is Resource.Loading -> emit(res)
+        }
     }
-
-//    override suspend fun getRoomDetail(roomId: String): RoomDetail {
-// Service hiện tại chưa có API chi tiết phòng → tạm thời không hỗ trợ
-//        throw UnsupportedOperationException("getRoomDetail() is not supported by RoomService")
-//    }
+    override suspend fun getRoomDetail(roomId: String): Flow<Resource<RoomDetailResponse>> = flow {
+        emit(Resource.Loading)
+        emit(apiCall { api.getRoomDetail(roomId) })
+    }
 }

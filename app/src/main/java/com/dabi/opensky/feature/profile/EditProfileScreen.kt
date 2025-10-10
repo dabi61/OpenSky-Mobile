@@ -51,6 +51,7 @@ fun EditProfileScreen(
     // init form từ user khi mở màn (chỉ 1 lần / theo userID)
     LaunchedEffect(user?.userID) { vm.startEdit(user) }
 
+
     var showDatePicker by remember { mutableStateOf(false) }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -67,13 +68,19 @@ fun EditProfileScreen(
                         enabled = vm.editState !is EditState.Saving,
                         onClick = {
                             vm.save { uri: Uri ->
-                                // Convert content Uri -> File (copy vào cache)
+                                // Chỉ xử lý ảnh local được pick từ máy
+                                val scheme = uri.scheme?.lowercase()
+                                if (scheme != "content" && scheme != "file") {
+                                    // Là http/https (URL từ server) => không upload avatar (giữ ảnh cũ)
+                                    return@save null
+                                }
+
+                                // Convert content/file Uri -> File (copy vào cache)
                                 val input = context.contentResolver.openInputStream(uri) ?: return@save null
                                 val tmp = File.createTempFile("avatar_", ".jpg", context.cacheDir)
                                 tmp.outputStream().use { out -> input.copyTo(out) }
                                 tmp
                             }
-                            onBack()
                         }
                     ) { Icon(Icons.Default.Check, null) }
                 }

@@ -7,6 +7,7 @@ import com.dabi.opensky.core.data.remote.api.RoomService
 import com.dabi.opensky.core.data.remote.apiCall
 import com.dabi.opensky.core.data.remote.backoffMillis
 import com.dabi.opensky.core.model.hotel.Hotel
+import com.dabi.opensky.core.model.hotel.HotelDetailResponse
 import com.dabi.opensky.core.model.hotel.HotelSearchRequest
 import com.dabi.opensky.core.model.hotel.HotelSearchResponse
 import kotlinx.coroutines.delay
@@ -80,7 +81,7 @@ class HotelRepository @Inject constructor(
         shouldRetry
     }
 
-    fun getHotelById(id: String): Flow<Resource<Hotel>> = flow {
+    fun getHotelById(id: String): Flow<Resource<HotelDetailResponse>> = flow {
         println("HotelRepository: Getting hotel by ID: $id")
         emit(Resource.Loading)
 
@@ -116,44 +117,6 @@ class HotelRepository @Inject constructor(
                     // If 404, try to find hotel in search cache as fallback
                     if (result.cause.code == 404) {
                         println("HotelRepository: Trying fallback - searching in cache for hotel ID: $id")
-
-                        // Look through search cache for this hotel
-                        val cachedHotel = synchronized(lru) {
-                            lru.values.flatMap { it.data.hotels }.find { it.hotelID == id }
-                        }
-
-                        if (cachedHotel != null) {
-                            println("HotelRepository: Found hotel in cache: ${cachedHotel.hotelName}")
-                            emit(Resource.Success(cachedHotel))
-                        } else {
-                            // Try searching for all hotels and find the one with matching ID
-                            println("HotelRepository: Hotel not in cache, trying to search all hotels...")
-                            val searchResult =
-                                apiCall { hotelApi.getAllHotels(page = 1, limit = 100) }
-
-                            when (searchResult) {
-                                is Resource.Success -> {
-                                    val foundHotel =
-                                        searchResult.data.hotels.find { it.hotelID == id }
-                                    if (foundHotel != null) {
-                                        println("HotelRepository: Found hotel in all hotels: ${foundHotel.hotelName}")
-                                        emit(Resource.Success(foundHotel))
-                                    } else {
-                                        println("HotelRepository: Hotel not found anywhere")
-                                        emit(result) // Original error
-                                    }
-                                }
-
-                                is Resource.Error -> {
-                                    println("HotelRepository: Fallback search also failed")
-                                    emit(result) // Original error
-                                }
-
-                                is Resource.Loading -> emit(result)
-                            }
-                        }
-                    } else {
-                        emit(result)
                     }
                 } else {
                     emit(result)

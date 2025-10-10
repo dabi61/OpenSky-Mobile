@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dabi.opensky.core.data.remote.Resource
 import com.dabi.opensky.core.data.repository.HotelRepository
 import com.dabi.opensky.core.model.hotel.Hotel
+import com.dabi.opensky.core.model.hotel.HotelDetailResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,8 +18,8 @@ class HotelDetailViewModel @Inject constructor(
     private val hotelRepository: HotelRepository
 ) : ViewModel() {
     
-    private val _hotelDetail = MutableStateFlow<Resource<Hotel>>(Resource.Loading)
-    val hotelDetail: StateFlow<Resource<Hotel>> = _hotelDetail.asStateFlow()
+    private val _hotelDetail = MutableStateFlow<Resource<HotelDetailResponse>>(Resource.Loading)
+    val hotelDetail: StateFlow<Resource<HotelDetailResponse>> = _hotelDetail.asStateFlow()
     
     fun loadHotelDetail(hotelId: String) {
         viewModelScope.launch {

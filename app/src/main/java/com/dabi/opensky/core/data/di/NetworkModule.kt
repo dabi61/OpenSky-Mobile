@@ -3,6 +3,7 @@ package com.dabi.opensky.core.data.di
 import android.content.Context
 import com.dabi.opensky.core.auth.TokenAuthenticator
 import com.dabi.opensky.core.data.remote.api.AuthApi
+import com.dabi.opensky.core.data.remote.api.BookingService
 import com.dabi.opensky.core.data.remote.api.HotelService
 import com.dabi.opensky.core.data.remote.api.LoginService
 import com.dabi.opensky.core.data.remote.api.ProfileService
@@ -105,4 +106,7 @@ object NetworkModule {
 
     @Provides @Singleton
     fun provideProfileApi(retrofit: Retrofit): ProfileService = retrofit.create(ProfileService::class.java)
+
+    @Provides @Singleton
+    fun provideBookingApi(retrofit: Retrofit): BookingService = retrofit.create(BookingService::class.java)
 }

@@ -1,5 +1,8 @@
 package com.dabi.opensky.navigation
 
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.*
@@ -28,13 +31,15 @@ import com.dabi.opensky.feature.session.SessionViewModel
 import com.dabi.opensky.feature.session.TokenExpiredDialog
 import com.dabi.opensky.core.navigation.AppComposeNavigator
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.dabi.opensky.core.navigation.LocalComposeNavigator
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun OpenSkyNavHost(
     navController: NavHostController,
-    sessionViewModel: SessionViewModel = hiltViewModel()
+    sessionViewModel: SessionViewModel
 ) {
     val sessionUiState by sessionViewModel.uiState.collectAsState()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -46,8 +51,13 @@ fun OpenSkyNavHost(
     // Handle logout navigation
     LaunchedEffect(sessionUiState.shouldNavigateToLogin) {
         if (sessionUiState.shouldNavigateToLogin) {
+            Log.d("OpenSkyNavHost", "Navigating to login")
             navController.navigate(OpenSkyScreen.Login) {
-                popUpTo(0) { inclusive = true }
+                popUpTo(navController.graph.findStartDestination().id) {
+                    inclusive = true
+                }
+                launchSingleTop = true
+                restoreState = false
             }
             sessionViewModel.onNavigatedToLogin()
         }
@@ -80,7 +90,7 @@ fun OpenSkyNavHost(
             navController = navController,
             startDestination = startDestination,
         ) {
-            openSkyNavigation(navController)
+            openSkyNavigation(navController, sessionViewModel)
         }
     }
     // Token expired dialog vẫn nằm trong provider để có thể navigate nếu cần
@@ -90,7 +100,11 @@ fun OpenSkyNavHost(
             onConfirm = {
                 sessionViewModel.logout()
                 navController.navigate(OpenSkyScreen.Login) {
-                    popUpTo(0) { inclusive = true }
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                    restoreState = false
                 }
             }
         )

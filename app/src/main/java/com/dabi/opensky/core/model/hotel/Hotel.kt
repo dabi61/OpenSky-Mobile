@@ -87,5 +87,4 @@ data class images(
     val imageId: Int,
     @Json(name = "imageUrl")
     val image: String
-
 )

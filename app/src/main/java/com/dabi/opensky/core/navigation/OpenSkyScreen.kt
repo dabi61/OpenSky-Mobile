@@ -37,6 +37,10 @@ sealed interface OpenSkyScreen {
     @Serializable
     data class RoomScreen(val hotelId: String) : OpenSkyScreen
 
+    @Serializable
+    data class RoomDetail(val roomId: String) : OpenSkyScreen
+
+
     // Legacy screens (có thể xóa sau)
     @Serializable
     data object LibraryScreen : OpenSkyScreen
