@@ -34,6 +34,7 @@ import com.dabi.opensky.core.designsystem.component.FabGroup
 import com.dabi.opensky.core.designsystem.component.getRenderEffect
 import com.dabi.opensky.feature.session.SessionViewModel
 import com.dabi.opensky.R
+import com.dabi.opensky.core.navigation.currentComposeNavigator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +43,7 @@ fun ProfileScreen(
     sessionViewModel: SessionViewModel,
     profileViewModel: ProfileViewModel = hiltViewModel(),
     onEditDetail: () -> Unit = {},
+    onBookingDetail: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
 
@@ -196,7 +198,9 @@ fun ProfileScreen(
                         icon = Icons.Default.Refresh,
                         title = "Lịch sử đặt phòng",
                         subtitle = "Xem các đặt phòng đã thực hiện",
-                        onClick = { /* TODO */ }
+                        onClick = {
+                            onBookingDetail()
+                        }
                     )
 
                     ProfileMenuItem(

@@ -24,11 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.dabi.opensky.core.data.remote.Resource
+import com.dabi.opensky.core.model.availability.AvailabilityResponse
 import com.dabi.opensky.core.model.room.RoomDetailResponse
+import com.dabi.opensky.feature.room.RoomDetailViewModel // <- đổi import nếu VM ở package khác
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,23 +40,45 @@ fun RoomDetailScreen(
     viewModel: RoomDetailViewModel = hiltViewModel()
 ) {
     val ui by viewModel.ui.collectAsState()
-    LaunchedEffect(roomId) { viewModel.load(roomId) }
+    val snack = remember { SnackbarHostState() }
 
+    // State picker ngày
     var showPickIn by remember { mutableStateOf(false) }
     var showPickOut by remember { mutableStateOf(false) }
 
-    val tz = ZoneId.systemDefault()
-    val isoFmt = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+    LaunchedEffect(roomId) { viewModel.load(roomId) }
+
+    // Snackbar cho availability
+    LaunchedEffect(ui.availability) {
+        when (val a = ui.availability) {
+            is Resource.Error -> snack.showSnackbar(a.cause.message ?: "Không kiểm tra được tình trạng")
+            is Resource.Success -> if (!a.data.isAvailable) {
+                snack.showSnackbar(a.data.message ?: "Phòng không khả dụng trong khoảng đã chọn")
+            }
+            else -> Unit
+        }
+    }
+    // Snackbar cho booking
+    LaunchedEffect(ui.booking) {
+        when (val b = ui.booking) {
+            is Resource.Error -> snack.showSnackbar(b.cause.message ?: "Đặt phòng thất bại")
+            is Resource.Success -> snack.showSnackbar("Đặt phòng thành công!")
+            else -> Unit
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Chi tiết phòng") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snack) }
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             when (val d = ui.detail) {
@@ -75,7 +97,13 @@ fun RoomDetailScreen(
                         checkOut = ui.checkOutIso,
                         onPickIn = { showPickIn = true },
                         onPickOut = { showPickOut = true },
-                        onBook = { viewModel.book() },
+
+                        // NEW: truyền xuống UI
+                        availability = ui.availability,
+                        onCheckAvailability = { viewModel.checkAvailability() },
+
+                        // NEW: chỉ đặt khi available
+                        onBook = { viewModel.bookIfAvailable() },
                         booking = ui.booking
                     )
                 }
@@ -94,7 +122,7 @@ fun RoomDetailScreen(
                 DatePicker(state = state)
                 LaunchedEffect(state.selectedDateMillis) {
                     state.selectedDateMillis?.let { millis ->
-                        viewModel.setCheckIn(millis.toUtcIsoString()) // <-- gửi UTC 'Z'
+                        viewModel.setCheckIn(millis.toUtcIsoStartOfDay()) // gửi UTC 'Z'
                     }
                 }
             }
@@ -110,7 +138,7 @@ fun RoomDetailScreen(
                 DatePicker(state = state)
                 LaunchedEffect(state.selectedDateMillis) {
                     state.selectedDateMillis?.let { millis ->
-                        viewModel.setCheckOut(millis.toUtcIsoString()) // <-- gửi UTC 'Z'
+                        viewModel.setCheckOut(millis.toUtcIsoStartOfDay()) // gửi UTC 'Z'
                     }
                 }
             }
@@ -126,6 +154,11 @@ private fun RoomDetailContent(
     checkOut: String?,
     onPickIn: () -> Unit,
     onPickOut: () -> Unit,
+
+    // NEW
+    availability: Resource<*>?,
+    onCheckAvailability: () -> Unit,
+
     onBook: () -> Unit,
     booking: Resource<*>?
 ) {
@@ -149,20 +182,29 @@ private fun RoomDetailContent(
                     AsyncImage(
                         model = url,
                         contentDescription = null,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
                             .clip(RoundedCornerShape(12.dp))
                     )
                 } else {
-                    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant))
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    )
                 }
             }
             Box(
-                Modifier.matchParentSize().background(
-                    Brush.verticalGradient(
-                        0f to Color.Transparent, 0.6f to Color.Transparent, 1f to Color.Black.copy(0.18f)
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            0.6f to Color.Transparent,
+                            1f to Color.Black.copy(0.18f)
+                        )
                     )
-                )
             )
             // Dots
             Row(
@@ -181,7 +223,10 @@ private fun RoomDetailContent(
                             .padding(horizontal = 3.dp)
                             .size(if (sel) 8.dp else 6.dp)
                             .clip(CircleShape)
-                            .background(if (sel) MaterialTheme.colorScheme.primary else Color.White.copy(0.6f))
+                            .background(
+                                if (sel) MaterialTheme.colorScheme.primary
+                                else Color.White.copy(0.6f)
+                            )
                     )
                 }
             }
@@ -191,7 +236,11 @@ private fun RoomDetailContent(
 
         // Info
         Column(Modifier.padding(horizontal = 16.dp)) {
-            Text(detail.roomName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                detail.roomName,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AssistChip(onClick = {}, label = { Text(detail.roomType) })
@@ -230,40 +279,72 @@ private fun RoomDetailContent(
                         Text(checkOut?.toShortDateOrSelf() ?: "Chọn ngày trả phòng")
                     }
                 }
+
                 Spacer(Modifier.height(12.dp))
 
-                when (booking) {
+                // --- Nút kiểm tra tình trạng ---
+                val enableCheck = !checkIn.isNullOrBlank() && !checkOut.isNullOrBlank()
+                when (availability) {
                     is Resource.Loading -> {
                         Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
                             CircularProgressIndicator(Modifier.size(18.dp))
-                            Spacer(Modifier.width(10.dp))
-                            Text("Đang đặt...")
-                        }
-                    }
-                    is Resource.Error -> {
-                        Text(
-                            booking.cause.message ?: "Đặt phòng thất bại",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Button(onClick = onBook, modifier = Modifier.fillMaxWidth(), enabled = !checkIn.isNullOrBlank() && !checkOut.isNullOrBlank()) {
-                            Text("Đặt phòng")
+                            Spacer(Modifier.width(8.dp)); Text("Đang kiểm tra...")
                         }
                     }
                     is Resource.Success -> {
-                        Text("Đặt phòng thành công!", color = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.height(8.dp))
-                        // Tuỳ bạn: hiện bookingId nếu có
+                        // Nếu available true -> show nhãn & bật Đặt phòng
+                        val ok = (availability as Resource.Success<*>).data.let {
+                            @Suppress("UNCHECKED_CAST")
+                            (it as? AvailabilityResponse)?.isAvailable == true
+                        }
+                        if (ok) {
+                            Text(
+                                "Phòng khả dụng cho khoảng đã chọn.",
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            // Hiển thị tạm tính nếu có
+                            val av = (availability as Resource.Success<*>).data as? AvailabilityResponse
+                            av?.numberOfNights?.let { Text("Số đêm: $it") }
+                            av?.totalPrice?.let { Text("Tạm tính: ${it.toVnd()}", fontWeight = FontWeight.SemiBold) }
+
+                            Spacer(Modifier.height(12.dp))
+                            // --- Nút Đặt phòng ---
+                            when (booking) {
+                                is Resource.Loading -> {
+                                    Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
+                                        CircularProgressIndicator(Modifier.size(18.dp))
+                                        Spacer(Modifier.width(8.dp)); Text("Đang đặt...")
+                                    }
+                                }
+                                else -> {
+                                    Button(
+                                        onClick = onBook,
+                                        enabled = true,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) { Text("Đặt phòng") }
+                                }
+                            }
+                        } else {
+                            // Không khả dụng: đã có snackbar, cho phép bấm kiểm tra lại
+                            OutlinedButton(
+                                onClick = onCheckAvailability,
+                                enabled = enableCheck,
+                                modifier = Modifier.fillMaxWidth()
+                            ) { Text("Kiểm tra lại tình trạng") }
+                        }
                     }
-                    null -> {
+                    else -> {
                         Button(
-                            onClick = onBook,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !checkIn.isNullOrBlank() && !checkOut.isNullOrBlank()
-                        ) { Text("Đặt phòng") }
+                            onClick = onCheckAvailability,
+                            enabled = enableCheck,
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Kiểm tra tình trạng") }
                     }
                 }
+
+                // Trạng thái booking lỗi/thành công cũng đã Snackbar ở trên;
+                // có thể hiển thị phụ ở đây nếu muốn.
             }
         }
 
@@ -274,7 +355,9 @@ private fun RoomDetailContent(
 @Composable
 private fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().padding(24.dp),
+        Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -288,7 +371,6 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
 
 private fun Long.toVnd(): String = "%,d VND".format(this).replace(',', '.')
 
-// Hiển thị ngắn gọn yyyy-MM-dd nếu input là ISO-8601, nếu không trả về chuỗi gốc
 @RequiresApi(Build.VERSION_CODES.O)
 private fun String.toShortDateOrSelf(): String = try {
     val odt = java.time.OffsetDateTime.parse(this)
@@ -297,10 +379,20 @@ private fun String.toShortDateOrSelf(): String = try {
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun Long.toUtcIsoString(): String {
-    // millis lấy từ DatePicker là theo mốc UTC, nhưng bạn thường hiểu là ngày ở local.
-    // Cách an toàn: map sang LocalDate theo zone máy → set 00:00 local → convert sang UTC.
     val zone = ZoneId.systemDefault()
     val localDate = Instant.ofEpochMilli(this).atZone(zone).toLocalDate()
     val startOfDayLocal = localDate.atStartOfDay(zone)
     return startOfDayLocal.toInstant().toString() // ISO_INSTANT, có 'Z'
+}
+@RequiresApi(Build.VERSION_CODES.O)
+private fun Long.toUtcIsoStartOfDay(): String {
+    // selectedDateMillis của Material DatePicker vốn dĩ là 00:00 UTC của ngày đã chọn.
+    // Vì vậy: convert trực tiếp về LocalDate theo UTC, rồi gắn 00:00 UTC.
+    val dateUtc = java.time.Instant.ofEpochMilli(this)
+        .atZone(java.time.ZoneOffset.UTC)
+        .toLocalDate()
+    return dateUtc
+        .atStartOfDay(java.time.ZoneOffset.UTC)
+        .toInstant()
+        .toString() // dạng ISO_INSTANT, có 'Z' và là 00:00Z
 }

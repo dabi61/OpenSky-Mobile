@@ -1,5 +1,7 @@
 package com.dabi.opensky.core.data.di
 
+import com.dabi.opensky.core.data.repository.billing.BillingRepository
+import com.dabi.opensky.core.data.repository.billing.BillingRepositoryImpl
 import com.dabi.opensky.core.data.repository.booking.BookingRepository
 import com.dabi.opensky.core.data.repository.booking.BookingRepositoryImpl
 import com.dabi.opensky.core.data.repository.login.AuthRepository
@@ -33,6 +35,12 @@ abstract class RepositoryModule {
     abstract fun bindBookingRepository(
         bookingRepository: BookingRepositoryImpl
     ): BookingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBillingRepository(
+        billingRepository: BillingRepositoryImpl
+    ): BillingRepository
 
 
 }

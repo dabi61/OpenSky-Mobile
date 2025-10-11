@@ -29,7 +29,16 @@ sealed interface OpenSkyScreen {
 
     @Serializable
     data object EditProfile : OpenSkyScreen
-    
+
+    @Serializable
+    data object BookingDetail : OpenSkyScreen
+
+    @Serializable data object MyBookings : OpenSkyScreen
+
+    @Serializable data class MyBookingDetail(val bookingId: String) : OpenSkyScreen
+
+    @Serializable
+    data class TourBookingDetail(val bookingId: String)
     // Detail Screens
     @Serializable
     data class HotelDetail(val hotelId: String) : OpenSkyScreen

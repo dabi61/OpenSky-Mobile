@@ -298,7 +298,10 @@ fun FabGroup(
 
                 )
             ),
-            opacity = LinearEasing.transform(0.3f, 0.8f, animationProgress)
+            opacity = LinearEasing.transform(0.3f, 0.8f, animationProgress),
+            onClick = {
+                composeNavigation.navigate(OpenSkyScreen.MyBookings)
+            }
         )
 
         AnimateFab(

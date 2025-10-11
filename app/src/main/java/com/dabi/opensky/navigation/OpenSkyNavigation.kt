@@ -23,6 +23,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.dabi.opensky.core.navigation.OpenSkyScreen
+import com.dabi.opensky.feature.billing.MyBillsScreen
+import com.dabi.opensky.feature.booking.BookingDetailScreen
+import com.dabi.opensky.feature.booking.MyBookingsScreen
 import com.dabi.opensky.feature.favorites.FavoritesScreen
 import com.dabi.opensky.feature.home.HomeScreen
 import com.dabi.opensky.feature.hotel.HotelDetailScreen
@@ -34,6 +37,7 @@ import com.dabi.opensky.feature.search.SearchScreen
 import com.dabi.opensky.feature.session.SessionViewModel
 import com.dabi.opensky.feature.settings.SettingsScreen
 import com.dabi.opensky.feature.splash.SplashScreen
+import com.dabi.opensky.feature.tour.TourBookingDetailScreen
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -110,7 +114,48 @@ fun NavGraphBuilder.openSkyNavigation(
             onEditDetail = {
                 navController.navigate(OpenSkyScreen.EditProfile)
             },
+            onBookingDetail = {
+                navController.navigate(OpenSkyScreen.BookingDetail)
+            },
             sessionViewModel = sessionViewModel
+        )
+    }
+
+    composable<OpenSkyScreen.BookingDetail>(
+        enterTransition = { fadeIn(tween(300)) },
+        exitTransition = { fadeOut(tween(300)) }
+    ) {
+        MyBillsScreen(
+            onBack = {
+                navController.popBackStack()
+            }
+        )
+    }
+
+    composable<OpenSkyScreen.MyBookings> {
+        MyBookingsScreen(
+            onBack = { navController.popBackStack() },
+            onOpenBookingDetail = { id -> navController.navigate(OpenSkyScreen.MyBookingDetail(id)) },
+            onOpenTourBookingDetail = { id -> navController.navigate(OpenSkyScreen.TourBookingDetail(id)) }
+        )
+    }
+
+    composable<OpenSkyScreen.MyBookingDetail> {
+        val args = it.toRoute<OpenSkyScreen.MyBookingDetail>()
+        BookingDetailScreen(
+            bookingId = args.bookingId,
+            onBack = { navController.popBackStack() }
+        )
+    }
+
+    // navigation/OpenSkyNavigation.kt
+    composable<OpenSkyScreen.TourBookingDetail>(
+        enterTransition = { fadeIn() }, exitTransition = { fadeOut() }
+    ) { backStack ->
+        val route = backStack.toRoute<OpenSkyScreen.TourBookingDetail>()
+        TourBookingDetailScreen(
+            bookingId = route.bookingId,
+            onBack = { navController.popBackStack() }
         )
     }
 
