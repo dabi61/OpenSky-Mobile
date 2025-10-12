@@ -3,22 +3,30 @@ package com.dabi.opensky.core.data.di
 import android.content.Context
 import com.dabi.opensky.core.auth.TokenAuthenticator
 import com.dabi.opensky.core.data.remote.api.AuthApi
+import com.dabi.opensky.core.data.remote.api.BillService
+import com.dabi.opensky.core.data.remote.api.BookingService
 import com.dabi.opensky.core.data.remote.api.HotelService
 import com.dabi.opensky.core.data.remote.api.LoginService
+import com.dabi.opensky.core.data.remote.api.ProfileService
+import com.dabi.opensky.core.data.remote.api.RoomService
 import com.dabi.opensky.core.event.AppEventManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import com.dabi.opensky.core.data.remote.interceptor.AuthInterceptor
+import com.dabi.opensky.core.model.room.Room
 import com.dabi.opensky.core.session.SessionStore
 import com.dabi.opensky.core.session.SessionStoreImpl
 import com.dabi.opensky.core.session.TokenDataSource
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Qualifier
@@ -53,7 +61,8 @@ object NetworkModule {
         val authInterceptor = AuthInterceptor(session, baseHost)
         // TokenAuthenticator cần AuthApi, mà AuthApi cần Retrofit (cần OkHttp).
         // Dùng Lazy để chỉ tạo AuthApi sau khi Retrofit có sẵn.
-        val clientBuilder = OkHttpClient.Builder()
+        val logging = HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY) // Log backend
+        val clientBuilder = OkHttpClient.Builder().addInterceptor(logging)
         val client = clientBuilder.build() // tạm build để tạo retrofit dưới
 
         val retrofit = Retrofit.Builder()
@@ -80,6 +89,11 @@ object NetworkModule {
             .build()
 
     @Provides @Singleton
+    fun provideMoshi(): Moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+
+    @Provides @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi = retrofit.create(AuthApi::class.java)
 
     @Provides @Singleton
@@ -87,4 +101,16 @@ object NetworkModule {
 
     @Provides @Singleton
     fun provideHotelApi(retrofit: Retrofit): HotelService = retrofit.create(HotelService::class.java)
+
+    @Provides @Singleton
+    fun provideRoomApi(retrofit: Retrofit): RoomService = retrofit.create(RoomService::class.java)
+
+    @Provides @Singleton
+    fun provideProfileApi(retrofit: Retrofit): ProfileService = retrofit.create(ProfileService::class.java)
+
+    @Provides @Singleton
+    fun provideBookingApi(retrofit: Retrofit): BookingService = retrofit.create(BookingService::class.java)
+
+    @Provides @Singleton
+    fun provideBillingApi(retrofit: Retrofit): BillService = retrofit.create(BillService::class.java)
 }

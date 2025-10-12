@@ -1,5 +1,6 @@
 package com.dabi.opensky.feature.session
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dabi.opensky.core.data.repository.login.AuthRepository
@@ -51,6 +52,7 @@ class SessionViewModel @Inject constructor(
     }
 
     fun logout() {
+        Log.d("SessionViewModel", "Logging out...")
         viewModelScope.launch {
             authRepository.logout()
             dismissTokenExpiredDialog()

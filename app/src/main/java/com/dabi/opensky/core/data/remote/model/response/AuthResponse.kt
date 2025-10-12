@@ -7,34 +7,35 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 data class AuthResponse(
-    val access: String?,
-    val refresh: String?,
-    val accessExpSec: Long?,   // epoch seconds (UTC)
-    val refreshExpSec: Long?,
+    val access: String? = null,
+    val refresh: String? = null,
+    val accessExpSec: Long? = null,
+    val refreshExpSec: Long? = null,
+    val user: User? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class User(
     @Json(name = "userID")
-    val userID: String,
+    val userID: String?,
     @Json(name = "email")
-    val email: String,
+    val email: String?,
     @Json(name = "fullName")
-    val fullName: String,
+    val fullName: String?,
     @Json(name = "role")
-    val role: String,
+    val role: String?,
     @Json(name = "status")
     val status: String,
     @Json(name = "phoneNumber")
     val phoneNumber: String?,
     @Json(name = "citizenId")
     val citizenId: String?,
-    @Json(name = "doB")
+    @Json(name = "dob")
     val doB: String?,
     @Json(name = "avatarURL")
     val avatarURL: String?,
     @Json(name = "createdAt")
-    val createdAt: String
+    val createdAt: String?
 )
 
 @JsonClass(generateAdapter = true)

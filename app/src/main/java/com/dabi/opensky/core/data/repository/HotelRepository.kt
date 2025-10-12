@@ -1,16 +1,20 @@
-package com.dabi.opensky.core.data.repository.hotel
+package com.dabi.opensky.core.data.repository
 
 import com.dabi.opensky.core.data.remote.HttpFailureException
 import com.dabi.opensky.core.data.remote.Resource
 import com.dabi.opensky.core.data.remote.api.HotelService
+import com.dabi.opensky.core.data.remote.api.RoomService
 import com.dabi.opensky.core.data.remote.apiCall
 import com.dabi.opensky.core.data.remote.backoffMillis
-import com.dabi.opensky.core.model.Hotel
-import com.dabi.opensky.core.model.HotelSearchRequest
-import com.dabi.opensky.core.model.HotelSearchResponse
-import com.dabi.opensky.core.model.HotelsByProvinceResponse
-import kotlinx.coroutines.flow.*
+import com.dabi.opensky.core.model.hotel.Hotel
+import com.dabi.opensky.core.model.hotel.HotelDetailResponse
+import com.dabi.opensky.core.model.hotel.HotelSearchRequest
+import com.dabi.opensky.core.model.hotel.HotelSearchResponse
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.retryWhen
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -65,6 +69,7 @@ class HotelRepository @Inject constructor(
                 if (hotels.isNotEmpty()) featuredCache.value = hotels
                 emit(Resource.Success(hotels))
             }
+
             is Resource.Error -> emit(res)
             Resource.Loading -> Unit
         }
@@ -72,83 +77,52 @@ class HotelRepository @Inject constructor(
         val retryable = cause is IOException
         val http = (cause as? HttpFailureException)?.code
         val shouldRetry = retryable && attempt < 3 && http !in listOf(400, 401, 403, 404)
-        if (shouldRetry) kotlinx.coroutines.delay(backoffMillis(attempt))
+        if (shouldRetry) delay(backoffMillis(attempt))
         shouldRetry
     }
 
-    fun getHotelById(id: String): Flow<Resource<Hotel>> = flow {
+    fun getHotelById(id: String): Flow<Resource<HotelDetailResponse>> = flow {
         println("HotelRepository: Getting hotel by ID: $id")
         emit(Resource.Loading)
-        
+
         // Try primary API endpoint first
-        var result = apiCall { 
+        var result = apiCall {
             println("HotelRepository: Making API call to /hotels/$id")
-            hotelApi.getHotelById(id) 
+            hotelApi.getHotelById(id)
         }
-        
+
         // If primary endpoint fails with 404, try alternative endpoint
-        if (result is Resource.Error && 
-            result.cause is HttpFailureException && 
-            result.cause.code == 404) {
-            
+        if (result is Resource.Error &&
+            result.cause is HttpFailureException &&
+            result.cause.code == 404
+        ) {
+
             println("HotelRepository: Primary endpoint failed, trying alternative /hotel/$id")
             result = apiCall {
                 hotelApi.getHotelById(id)
             }
         }
-        
+
         when (result) {
             is Resource.Success -> {
                 println("HotelRepository: Successfully got hotel: ${result.data.hotelName}")
                 emit(result)
             }
+
             is Resource.Error -> {
                 println("HotelRepository: API call failed: ${result.cause.message}")
                 if (result.cause is HttpFailureException) {
                     println("HotelRepository: HTTP Error Code: ${result.cause.code}")
-                    
+
                     // If 404, try to find hotel in search cache as fallback
                     if (result.cause.code == 404) {
                         println("HotelRepository: Trying fallback - searching in cache for hotel ID: $id")
-                        
-                        // Look through search cache for this hotel
-                        val cachedHotel = synchronized(lru) {
-                            lru.values.flatMap { it.data.hotels }.find { it.hotelID == id }
-                        }
-                        
-                        if (cachedHotel != null) {
-                            println("HotelRepository: Found hotel in cache: ${cachedHotel.hotelName}")
-                            emit(Resource.Success(cachedHotel))
-                        } else {
-                            // Try searching for all hotels and find the one with matching ID
-                            println("HotelRepository: Hotel not in cache, trying to search all hotels...")
-                            val searchResult = apiCall { hotelApi.getAllHotels(page = 1, limit = 100) }
-                            
-                            when (searchResult) {
-                                is Resource.Success -> {
-                                    val foundHotel = searchResult.data.hotels.find { it.hotelID == id }
-                                    if (foundHotel != null) {
-                                        println("HotelRepository: Found hotel in all hotels: ${foundHotel.hotelName}")
-                                        emit(Resource.Success(foundHotel))
-                                    } else {
-                                        println("HotelRepository: Hotel not found anywhere")
-                                        emit(result) // Original error
-                                    }
-                                }
-                                is Resource.Error -> {
-                                    println("HotelRepository: Fallback search also failed")
-                                    emit(result) // Original error
-                                }
-                                is Resource.Loading -> emit(result)
-                            }
-                        }
-                    } else {
-                        emit(result)
                     }
                 } else {
                     emit(result)
                 }
             }
+
             is Resource.Loading -> {
                 println("HotelRepository: Still loading...")
                 emit(result)
@@ -160,7 +134,7 @@ class HotelRepository @Inject constructor(
         val shouldRetry = retryable && attempt < 2 && http !in listOf(400, 404)
         if (shouldRetry) {
             println("HotelRepository: Retrying API call (attempt ${attempt + 1})")
-            kotlinx.coroutines.delay(backoffMillis(attempt))
+            delay(backoffMillis(attempt))
         }
         shouldRetry
     }
@@ -176,7 +150,7 @@ fun getAllHotels(
     val retryable = cause is IOException
     val http = (cause as? HttpFailureException)?.code
     val shouldRetry = retryable && attempt < 3 && http !in listOf(400, 404)
-    if (shouldRetry) kotlinx.coroutines.delay(backoffMillis(attempt))
+    if (shouldRetry) delay(backoffMillis(attempt))
     shouldRetry
 }
 
@@ -208,6 +182,7 @@ fun searchHotels(request: HotelSearchRequest): Flow<Resource<HotelSearchResponse
             cachePut(key, CacheEntry(res.data, System.currentTimeMillis()))
             emit(res)
         }
+
         is Resource.Error -> emit(res)
         Resource.Loading -> Unit
     }
@@ -215,7 +190,7 @@ fun searchHotels(request: HotelSearchRequest): Flow<Resource<HotelSearchResponse
     val retryable = cause is IOException
     val http = (cause as? HttpFailureException)?.code
     val shouldRetry = retryable && attempt < 3 && http !in listOf(400, 404)
-    if (shouldRetry) kotlinx.coroutines.delay(backoffMillis(attempt))
+    if (shouldRetry) delay(backoffMillis(attempt))
     shouldRetry
 }
 
@@ -228,12 +203,13 @@ fun getHotelsByProvinceId(
     size: Int = 10
 ): Flow<Resource<HotelSearchResponse>> = flow {
     emit(Resource.Loading)
-    
+
     when (val res = apiCall { hotelApi.getHotelsByProvinceId(provinceId, page, size) }) {
         is Resource.Success -> {
             // Convert HotelsByProvinceResponse to HotelSearchResponse
             emit(Resource.Success(res.data.toHotelSearchResponse()))
         }
+
         is Resource.Error -> emit(res)
         Resource.Loading -> Unit
     }
@@ -241,7 +217,7 @@ fun getHotelsByProvinceId(
     val retryable = cause is IOException
     val http = (cause as? HttpFailureException)?.code
     val shouldRetry = retryable && attempt < 2 && http !in listOf(400, 404)
-    if (shouldRetry) kotlinx.coroutines.delay(backoffMillis(attempt))
+    if (shouldRetry) delay(backoffMillis(attempt))
     shouldRetry
 }
 
@@ -259,7 +235,7 @@ fun getHotelsByProvince(
     val retryable = cause is IOException
     val http = (cause as? HttpFailureException)?.code
     val shouldRetry = retryable && attempt < 2 && http !in listOf(400, 404)
-    if (shouldRetry) kotlinx.coroutines.delay(backoffMillis(attempt))
+    if (shouldRetry) delay(backoffMillis(attempt))
     shouldRetry
 }
 
@@ -268,4 +244,3 @@ fun clearCache() {
     synchronized(lru) { lru.clear() }
 }
 }
-

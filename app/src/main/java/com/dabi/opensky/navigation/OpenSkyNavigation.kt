@@ -1,6 +1,8 @@
 package com.dabi.opensky.navigation
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -14,25 +16,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.dabi.opensky.core.navigation.OpenSkyScreen
+import com.dabi.opensky.feature.billing.MyBillsScreen
+import com.dabi.opensky.feature.booking.BookingDetailScreen
+import com.dabi.opensky.feature.booking.MyBookingsScreen
 import com.dabi.opensky.feature.favorites.FavoritesScreen
 import com.dabi.opensky.feature.home.HomeScreen
 import com.dabi.opensky.feature.hotel.HotelDetailScreen
 import com.dabi.opensky.feature.login.LoginScreen
+import com.dabi.opensky.feature.profile.EditProfileScreen
 import com.dabi.opensky.feature.profile.ProfileScreen
+import com.dabi.opensky.feature.rooms.HotelRoomsScreen
 import com.dabi.opensky.feature.search.SearchScreen
+import com.dabi.opensky.feature.session.SessionViewModel
 import com.dabi.opensky.feature.settings.SettingsScreen
 import com.dabi.opensky.feature.splash.SplashScreen
+import com.dabi.opensky.feature.tour.TourBookingDetailScreen
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 context(SharedTransitionScope)
 fun NavGraphBuilder.openSkyNavigation(
-    navController: NavHostController
+    navController: NavHostController,
+    sessionViewModel: SessionViewModel
 ) {
 
     composable<OpenSkyScreen.Splash> {
@@ -67,7 +79,8 @@ fun NavGraphBuilder.openSkyNavigation(
         HomeScreen(
             onHotelClick = { hotelId ->
                 navController.navigate(OpenSkyScreen.HotelDetail(hotelId))
-            }
+            },
+            sessionViewModel = sessionViewModel
         )
     }
     
@@ -97,7 +110,62 @@ fun NavGraphBuilder.openSkyNavigation(
         enterTransition = { fadeIn(tween(300)) },
         exitTransition = { fadeOut(tween(300)) }
     ) {
-        ProfileScreen()
+        ProfileScreen(
+            onEditDetail = {
+                navController.navigate(OpenSkyScreen.EditProfile)
+            },
+            onBookingDetail = {
+                navController.navigate(OpenSkyScreen.BookingDetail)
+            },
+            sessionViewModel = sessionViewModel
+        )
+    }
+
+    composable<OpenSkyScreen.BookingDetail>(
+        enterTransition = { fadeIn(tween(300)) },
+        exitTransition = { fadeOut(tween(300)) }
+    ) {
+        MyBillsScreen(
+            onBack = {
+                navController.popBackStack()
+            }
+        )
+    }
+
+    composable<OpenSkyScreen.MyBookings> {
+        MyBookingsScreen(
+            onBack = { navController.popBackStack() },
+            onOpenBookingDetail = { id -> navController.navigate(OpenSkyScreen.MyBookingDetail(id)) },
+            onOpenTourBookingDetail = { id -> navController.navigate(OpenSkyScreen.TourBookingDetail(id)) }
+        )
+    }
+
+    composable<OpenSkyScreen.MyBookingDetail> {
+        val args = it.toRoute<OpenSkyScreen.MyBookingDetail>()
+        BookingDetailScreen(
+            bookingId = args.bookingId,
+            onBack = { navController.popBackStack() }
+        )
+    }
+
+    // navigation/OpenSkyNavigation.kt
+    composable<OpenSkyScreen.TourBookingDetail>(
+        enterTransition = { fadeIn() }, exitTransition = { fadeOut() }
+    ) { backStack ->
+        val route = backStack.toRoute<OpenSkyScreen.TourBookingDetail>()
+        TourBookingDetailScreen(
+            bookingId = route.bookingId,
+            onBack = { navController.popBackStack() }
+        )
+    }
+
+    composable<OpenSkyScreen.EditProfile>(
+        enterTransition = { fadeIn(tween(300)) },
+        exitTransition = { fadeOut(tween(300)) }
+    ) { backStackEntry ->
+        EditProfileScreen(
+            onBack = { navController.popBackStack() },
+        )
     }
     
     composable<OpenSkyScreen.Settings>(
@@ -107,15 +175,45 @@ fun NavGraphBuilder.openSkyNavigation(
         SettingsScreen()
     }
     
-    composable<OpenSkyScreen.HotelDetail> { backStackEntry ->
+    composable<OpenSkyScreen.HotelDetail>(
+        enterTransition = { fadeIn(tween(300)) },
+        exitTransition = { fadeOut(tween(300)) }
+    ) { backStackEntry ->
         val hotelDetail = backStackEntry.toRoute<OpenSkyScreen.HotelDetail>()
 //        Log.d("HotelDetailScreen", "Hotel ID: ${hotelDetail.hotelId}")
         HotelDetailScreen(
             hotelId = hotelDetail.hotelId,
-            onBackClick = { navController.popBackStack() }
+            onBackClick = { navController.popBackStack() },
+            onSeeRooms = {
+                navController.navigate(OpenSkyScreen.RoomScreen(hotelId = hotelDetail.hotelId))
+            }
+        )
+    }
+
+    composable<OpenSkyScreen.RoomScreen> {
+        val args = it.toRoute<OpenSkyScreen.RoomScreen>()
+        HotelRoomsScreen(
+            hotelId = args.hotelId,
+            onBack = { navController.popBackStack() },
+            onRoomClick = { room ->
+                navController.navigate(OpenSkyScreen.RoomDetail(roomId = room.id)) // 👈 sang chi tiết phòng
+            }
+        )
+    }
+
+    // 👇 Thêm mới: màn chi tiết phòng + đặt phòng
+    composable<OpenSkyScreen.RoomDetail>(
+        enterTransition = { fadeIn(tween(300)) },
+        exitTransition = { fadeOut(tween(300)) }
+    ) { backStackEntry ->
+        val args = backStackEntry.toRoute<OpenSkyScreen.RoomDetail>()
+        com.dabi.opensky.feature.roomdetail.RoomDetailScreen(
+            roomId = args.roomId,
+            onBack = { navController.popBackStack() }
         )
     }
 }
+
 //
 //    // Màn Library (push từ Home)
 //    composable<TrueCleanScreen.LibraryScreen>(

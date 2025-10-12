@@ -1,270 +1,501 @@
-// =============================
-// HomeScreen.kt (updated for new ViewModel API)
-// =============================
 package com.dabi.opensky.feature.home
 
-import com.dabi.opensky.feature.hotel.HotelViewModel
-import com.dabi.opensky.feature.hotel.HotelAction
+import android.os.Build
+import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.dabi.opensky.core.model.Hotel
+import com.dabi.opensky.core.model.hotel.Hotel
+import com.dabi.opensky.feature.hotel.HotelViewModel
 import com.dabi.opensky.feature.session.SessionViewModel
-
+import com.dabi.opensky.core.designsystem.component.CustomBottomNavigation
+import com.dabi.opensky.core.designsystem.component.FabGroup
+import com.dabi.opensky.core.designsystem.component.getRenderEffect
+import com.dabi.opensky.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onHotelClick: (String) -> Unit = {},
     hotelViewModel: HotelViewModel = hiltViewModel(),
-    sessionViewModel: SessionViewModel = hiltViewModel()
+    sessionViewModel: SessionViewModel
 ) {
-    val uiState by hotelViewModel.state.collectAsStateWithLifecycle()
 
+    val uiState by hotelViewModel.state.collectAsStateWithLifecycle()
     var search by remember { mutableStateOf(uiState.searchQuery) }
 
-    LaunchedEffect(Unit) {
-// VM sẽ tự LoadAll ở init thông qua pipeline onStart
+    // ====== FAB Menu state & animations (copy từ MainScreen) ======
+    val isMenuExtended = remember { mutableStateOf(false) }
+
+    val fabAnimationProgress by animateFloatAsState(
+        targetValue = if (isMenuExtended.value) 1f else 0f,
+        animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
+        label = "fabProgress"
+    )
+
+    val renderEffect = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        getRenderEffect().asComposeRenderEffect()
+    } else {
+        null
     }
-    Scaffold(
-        modifier = Modifier
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = modifier.fillMaxSize().padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+
+//    val topColor = Color(0xFF1DA1F2) // màu bạn đang dùng cho header
+//    val systemUi = rememberSystemUiController()
+
+    // set màu thanh status bar theo màn hình Home
+//    DisposableEffect(topColor) {
+//        systemUi.setStatusBarColor(topColor, darkIcons = false) // icon trắng
+//        onDispose {
+//            // tùy ý: khôi phục khi rời màn
+//            systemUi.setStatusBarColor(Color.Transparent, darkIcons = true)
+//        }
+//    }
+    // ============ HomeScreen: CONTENT mới theo ảnh ============
+    Scaffold { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(bottom = 24.dp)
         ) {
-// Header + Search
-            item {
-                Column {
-                    Text(
-                        text = "Chào mừng đến với OpenSky",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
+            // CONTENT
+            LazyColumn(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(0.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                // Top blue header + search
+                item {
+                    TopSearchBar(
                         value = search,
-                        onValueChange = {
+                        onChange = {
                             search = it
-                            hotelViewModel.onSearchTextChanged(it) // debounce trong VM
+                            hotelViewModel.onSearchTextChanged(it)
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Tìm khách sạn, thành phố, địa danh...") },
-                        singleLine = true
+                        topColor = colorResource(R.color.blue),   // 💙 màu top bar bạn muốn
+                        radius = 28.dp,                 // 🔵 bo tròn hơn
+                        placeholderColor = Color.Gray,
+                        iconTint = Color.White,
+                        fieldBg = Color.White
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        AssistChip(onClick = { hotelViewModel.dispatch(HotelAction.Refresh) }, label = { Text("Làm mới") })
-                        TextButton(onClick = { sessionViewModel.logout() }) { Text("Đăng xuất", color = MaterialTheme.colorScheme.error) }
-                    }
                 }
-            }
 
-// Featured Hotels Section
-            if (uiState.featuredHotels.isNotEmpty()) {
+                // Categories
+                item {
+                    CategoryRow(
+                        modifier = Modifier.padding(top = 12.dp, start = 12.dp, end = 12.dp)
+                    )
+                }
+
+                // Ưu đãi
                 item {
                     Text(
-                        text = "Khách sạn nổi bật",
-                        style = MaterialTheme.typography.titleLarge,
+                        text = "Ưu đãi",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                }
+                item {
+                    PromoCard(
+                        code = "SUNWORLDDANANG",
+                        title = "Tặng vé tham quan Sun World",
+                        subtitle = "Cho khách hàng đi tour Đà Nẵng",
+                        onSave = { /* TODO: handle save */ },
+                        modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }
 
+                // Khuyến mãi cho bạn
                 item {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp)
-                    ) {
-                        items(uiState.featuredHotels) { hotel ->
-                            FeaturedHotelCard(
-                                hotel = hotel,
-                                onClick = { onHotelClick(hotel.hotelID) }
-                            )
+                    Text(
+                        text = "Khuyến mãi cho bạn",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                }
+
+                // Grid 2 cột từ danh sách hotels
+                if (uiState.isLoading && uiState.hotels.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) { CircularProgressIndicator() }
+                    }
+                } else {
+                    items(uiState.hotels.chunked(2)) { row ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            row.getOrNull(0)?.let { h ->
+                                HotelPromoCard(
+                                    hotel = h,
+                                    onClick = { onHotelClick(h.hotelID) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            row.getOrNull(1)?.let { h ->
+                                HotelPromoCard(
+                                    hotel = h,
+                                    onClick = { onHotelClick(h.hotelID) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            } ?: Spacer(Modifier.weight(1f))
                         }
                     }
                 }
-            }
-            // All Hotels Section
-            item {
-                Text(
-                    text = "Tất cả khách sạn",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
 
-            if (uiState.isLoading && uiState.hotels.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator() }
+                // error + load more (giữ nguyên logic)
+                if (uiState.isLoadingMore) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
+                    }
                 }
-            }
-
-            items(uiState.hotels) { hotel ->
-                HotelCard(
-                    hotel = hotel,
-                    onClick = { onHotelClick(hotel.hotelID) }
-                )
-            }
-
-// (Optional) Load-more: khuyến nghị chuyển qua Paging3; phần dưới giữ nguyên nếu bạn có cờ isLoadingMore
-            if (uiState.isLoadingMore) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
-                }
-            }
-            uiState.errorMessage?.let { error ->
-                item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(
-                                text = error,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            TextButton(onClick = { hotelViewModel.clearError() }) { Text("Đóng") }
+                uiState.errorMessage?.let { error ->
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                Text(error, color = MaterialTheme.colorScheme.onErrorContainer)
+                                Spacer(Modifier.height(8.dp))
+                                TextButton(onClick = { hotelViewModel.clearError() }) { Text("Đóng") }
+                            }
                         }
                     }
                 }
+                item { Spacer(Modifier.height(80.dp)) } // chừa bottom nav
             }
+
+            // ===== Bottom nav & FAB (giữ nguyên của bạn) =====
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                CustomBottomNavigation()
+            }
+
+            if (isMenuExtended.value) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectTapGestures(onTap = {
+                                isMenuExtended.value = false
+                            })
+                        }
+                )
+            }
+
+            FabGroup(renderEffect = renderEffect, animationProgress = fabAnimationProgress)
+            FabGroup(
+                renderEffect = null,
+                animationProgress = fabAnimationProgress,
+                toggleAnimation = { isMenuExtended.value = !isMenuExtended.value }
+            )
         }
     }
 }
+//    Các composable phụ(đặt dưới file)
+    @Composable
+    private fun TopSearchBar(
+    value: String,
+    onChange: (String) -> Unit,
+    // 🔧 tham số tuỳ biến
+    topColor: Color = colorResource(id = R.color.blue),      // màu nền thanh trên
+    radius: Dp = 24.dp,                                      // độ bo ô search
+    placeholderColor: Color = Color(0xFF8AAFD6),
+    iconTint: Color = Color.White,
+    fieldBg: Color = Color.White
+    ) {
+    val shape: Shape = RoundedCornerShape(radius)
 
-@OptIn(ExperimentalMaterial3Api::class)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(topColor)
+            .padding(top = 12.dp, start = 12.dp, end = 12.dp, bottom = 12.dp)
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+            placeholder = { Text("Nhập nội dung tìm kiếm…", color = placeholderColor) },
+            singleLine = true,
+            shape = shape,                       // ✅ bo tròn theo tham số
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = fieldBg,
+                unfocusedContainerColor = fieldBg,
+                disabledContainerColor = fieldBg,
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                cursorColor = topColor
+            ),
+            trailingIcon = {
+                // nút icon trong suốt/bo tròn nhẹ cho hợp ảnh mẫu
+                Surface(
+                    color = topColor.copy(alpha = 0.25f),
+                    shape = CircleShape
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+        )
+    }
+}
+
 @Composable
-private fun FeaturedHotelCard(
-    hotel: Hotel,
-    onClick: () -> Unit
+private fun CategoryRow(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        CategoryItem(
+            title = "Khách sạn",
+            bg = Color(0xFFFFF4E6),
+            drawableRes = R.drawable.img_1,
+            modifier = Modifier.weight(1f)   // ✅ weight ở RowScope
+        )
+        CategoryItem(
+            title = "Tour",
+            bg = Color(0xFFEFF7FF),
+            drawableRes = R.drawable.img_2,
+            modifier = Modifier.weight(1f)
+        )
+        CategoryItem(
+            title = "Hoạt động",
+            bg = Color(0xFFFFF0F3),
+            drawableRes = R.drawable.img_3,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun CategoryItem(
+    title: String,
+    bg: Color,
+    @DrawableRes drawableRes: Int,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        onClick = onClick,
-        modifier = Modifier.width(280.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = modifier   // ✅ dùng modifier truyền vào
+            .height(164.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column {
-            AsyncImage(
-                model = hotel.displayImage,
-                contentDescription = hotel.hotelName,
+        Column(
+            modifier = Modifier.padding(bottom = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp),
-                contentScale = ContentScale.Crop
-            )
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = hotel.hotelName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    .height(140.dp)
+                    .background(bg, shape = MaterialTheme.shapes.medium),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = drawableRes,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-                    Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        text = hotel.province,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        repeat(hotel.star) {
-                            Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                    Text(
-                        text = "từ ${String.format("%.0f", hotel.displayMinPrice)}đ",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
             }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                color = Color(0xFF5C6A79)
+            )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HotelCard(
-    hotel: Hotel,
-    onClick: () -> Unit
-) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
-        Row(modifier = Modifier.padding(12.dp)) {
-            AsyncImage(
-                model = hotel.displayImage,
-                contentDescription = hotel.hotelName,
-                modifier = Modifier.size(80.dp),
-                contentScale = ContentScale.Crop
-            )
-            Column(modifier = Modifier.fillMaxWidth().padding(start = 12.dp)) {
-                Text(
-                    text = hotel.hotelName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-                    Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        text = "${'$'}{hotel.address}, ${'$'}{hotel.province}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        repeat(hotel.star) {
-                            Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                        }
-                        Text(
-                            text = " • ${hotel.displayAvailableRooms}/${hotel.displayTotalRooms} phòng",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+    @Composable
+    private fun PromoCard(
+        code: String,
+        title: String,
+        subtitle: String,
+        onSave: () -> Unit,
+        modifier: Modifier = Modifier
+    ) {
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = Color(0xFFEAF4FF),
+                    shape = CircleShape,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Place,
+                            contentDescription = null,
+                            tint = colorResource(R.color.blue)
                         )
                     }
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 12.dp)
+                ) {
                     Text(
-                        text = "${String.format("%.0f", hotel.displayMinPrice)}đ - ${String.format("%.0f", hotel.displayMaxPrice)}đ",
+                        title,
                         style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = code,
+                            onValueChange = {},
+                            readOnly = true,
+                            modifier = Modifier.weight(1f).wrapContentHeight(),
+                            singleLine = true
+                        )
+                        Button(
+                            onClick = onSave,
+                            modifier = Modifier.height(40.dp)
+                        ) { Text("Lưu") }
+                    }
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun HotelPromoCard(
+        hotel: Hotel,
+        onClick: () -> Unit,
+        modifier: Modifier = Modifier
+    ) {
+        Card(
+            onClick = onClick,
+            modifier = modifier,
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column {
+                Box {
+                    AsyncImage(
+                        model = hotel.displayImage,
+                        contentDescription = hotel.hotelName,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                    // badge địa điểm
+                    Surface(
+                        color = colorResource(R.color.blue),
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .align(Alignment.TopStart)
+                    ) {
+                        Text(
+                            text = hotel.province,
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+                Column(Modifier.padding(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        repeat(hotel.star.coerceIn(0, 5)) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFC107),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = hotel.hotelName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    Text(
+                        text = "${"%,.0f".format(hotel.displayMinPrice)} VND",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color(0xFFE53935), // đỏ nhẹ như ảnh
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
         }
     }
-}

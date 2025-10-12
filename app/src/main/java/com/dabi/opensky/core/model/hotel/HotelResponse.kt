@@ -1,4 +1,4 @@
-package com.dabi.opensky.core.model
+package com.dabi.opensky.core.model.hotel
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
