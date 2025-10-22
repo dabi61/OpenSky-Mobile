@@ -7,23 +7,23 @@ import kotlinx.serialization.Serializable
 sealed interface OpenSkyScreen {
     @Serializable
     data object Splash : OpenSkyScreen
-    
+
     @Serializable
     data object Login : OpenSkyScreen
-    
+
     // Main App Screens với Bottom Navigation
     @Serializable
     data object Home : OpenSkyScreen
-    
+
     @Serializable
     data object Search : OpenSkyScreen
-    
+
     @Serializable
     data object Favorites : OpenSkyScreen
-    
+
     @Serializable
     data object Profile : OpenSkyScreen
-    
+
     @Serializable
     data object Settings : OpenSkyScreen
 
@@ -33,7 +33,14 @@ sealed interface OpenSkyScreen {
     @Serializable
     data object BookingDetail : OpenSkyScreen
 
-    @Serializable data object MyBookings : OpenSkyScreen
+    @Serializable
+    object ExploreHotel : OpenSkyScreen
+
+    @Serializable
+    object ExploreTour : OpenSkyScreen     // NEW
+
+    @Serializable
+    object ExploreActivity : OpenSkyScreen // NEW
 
     @Serializable data class MyBookingDetail(val bookingId: String) : OpenSkyScreen
 
@@ -49,6 +56,8 @@ sealed interface OpenSkyScreen {
     @Serializable
     data class RoomDetail(val roomId: String) : OpenSkyScreen
 
+    @Serializable
+    data object MyBookings : OpenSkyScreen
 
     // Legacy screens (có thể xóa sau)
     @Serializable

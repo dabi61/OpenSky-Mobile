@@ -29,6 +29,7 @@ import com.dabi.opensky.feature.booking.MyBookingsScreen
 import com.dabi.opensky.feature.favorites.FavoritesScreen
 import com.dabi.opensky.feature.home.HomeScreen
 import com.dabi.opensky.feature.hotel.HotelDetailScreen
+import com.dabi.opensky.feature.hotel.HotelsExploreScreen
 import com.dabi.opensky.feature.login.LoginScreen
 import com.dabi.opensky.feature.profile.EditProfileScreen
 import com.dabi.opensky.feature.profile.ProfileScreen
@@ -80,7 +81,10 @@ fun NavGraphBuilder.openSkyNavigation(
             onHotelClick = { hotelId ->
                 navController.navigate(OpenSkyScreen.HotelDetail(hotelId))
             },
-            sessionViewModel = sessionViewModel
+            sessionViewModel = sessionViewModel,
+            onExploreHotels = {
+                navController.navigate(OpenSkyScreen.ExploreHotel)
+            }
         )
     }
     
@@ -131,6 +135,37 @@ fun NavGraphBuilder.openSkyNavigation(
             }
         )
     }
+
+    // Explore Hotel (đang có) — bổ sung onHotelClick để đi tới chi tiết
+    composable<OpenSkyScreen.ExploreHotel>(
+        enterTransition = { fadeIn(tween(300)) },
+        exitTransition  = { fadeOut(tween(300)) }
+    ) {
+        HotelsExploreScreen(
+//            onBack = { navController.popBackStack() },
+            onHotelClick = { id -> navController.navigate(OpenSkyScreen.HotelDetail(id)) } // NEW
+        )
+    }
+//
+//// Explore Tour – placeholder để bạn triển khai sau
+//    composable<OpenSkyScreen.ExploreTour>(
+//        enterTransition = { fadeIn(tween(300)) },
+//        exitTransition  = { fadeOut(tween(300)) }
+//    ) {
+//        ToursScreen( // hoặc tên bạn đặt
+//            onBack = { navController.popBackStack() }
+//        )
+//    }
+//
+//// Explore Activity – placeholder để bạn triển khai sau
+//    composable<OpenSkyScreen.ExploreActivity>(
+//        enterTransition = { fadeIn(tween(300)) },
+//        exitTransition  = { fadeOut(tween(300)) }
+//    ) {
+//        ActivitiesScreen(
+//            onBack = { navController.popBackStack() }
+//        )
+//    }
 
     composable<OpenSkyScreen.MyBookings> {
         MyBookingsScreen(

@@ -5,13 +5,13 @@
 OpenSky là một ứng dụng đặt phòng khách sạn được xây dựng bằng **Jetpack Compose** với kiến trúc **Clean Architecture**. Ứng dụng cung cấp trải nghiệm tìm kiếm, xem chi tiết và quản lý khách sạn một cách trực quan và hiện đại.
 
 ### **Tính năng chính:**
-- ✅ **Authentication System** - Đăng nhập/đăng xuất với token management
-- ✅ **Hotel Search** - Tìm kiếm khách sạn với filters nâng cao
-- ✅ **Hotel Listing** - Hiển thị danh sách khách sạn với pagination
-- ✅ **Favorites** - Quản lý khách sạn yêu thích
-- ✅ **User Profile** - Quản lý thông tin cá nhân
-- ✅ **Settings** - Cài đặt ứng dụng
-- ✅ **Bottom Navigation** - Điều hướng giữa 5 màn hình chính
+-  **Authentication System** - Đăng nhập/đăng xuất với token management
+-  **Hotel Search** - Tìm kiếm khách sạn với filters nâng cao
+-  **Hotel Listing** - Hiển thị danh sách khách sạn với pagination
+-  **Favorites** - Quản lý khách sạn yêu thích
+-  **User Profile** - Quản lý thông tin cá nhân
+-  **Settings** - Cài đặt ứng dụng
+-  **Bottom Navigation** - Điều hướng giữa 5 màn hình chính
 
 ---
 
@@ -173,12 +173,12 @@ data class HotelUiState(
 ```
 
 **Chức năng:**
-- ✅ `loadFeaturedHotels()` - Load khách sạn nổi bật
-- ✅ `loadAllHotels()` - Load tất cả khách sạn với pagination
-- ✅ `searchHotels(query)` - Tìm kiếm đơn giản
-- ✅ `advancedSearch()` - Tìm kiếm với filters
-- ✅ `loadMoreHotels()` - Load more cho pagination
-- ✅ `clearSearch()` - Reset search về all hotels
+-  `loadFeaturedHotels()` - Load khách sạn nổi bật
+-  `loadAllHotels()` - Load tất cả khách sạn với pagination
+-  `searchHotels(query)` - Tìm kiếm đơn giản
+-  `advancedSearch()` - Tìm kiếm với filters
+-  `loadMoreHotels()` - Load more cho pagination
+-  `clearSearch()` - Reset search về all hotels
 
 ### **2. HotelRepository**
 ```kotlin
@@ -436,10 +436,10 @@ SOFTWARE.
 OpenSky Hotel App được xây dựng với **modern Android development practices**, sử dụng **Jetpack Compose** và **Clean Architecture**. Ứng dụng cung cấp trải nghiệm người dùng mượt mà với **token-based authentication**, **real-time search**, và **intuitive navigation**.
 
 **Điểm mạnh của dự án:**
-- ✅ **Scalable Architecture** - Dễ mở rộng và maintain
-- ✅ **Modern UI** - Material 3 design system
-- ✅ **Robust Authentication** - Secure token management
-- ✅ **Performance Optimized** - Efficient data loading
-- ✅ **Production Ready** - Error handling và edge cases
+-  **Scalable Architecture** - Dễ mở rộng và maintain
+-  **Modern UI** - Material 3 design system
+-  **Robust Authentication** - Secure token management
+-  **Performance Optimized** - Efficient data loading
+-  **Production Ready** - Error handling và edge cases
 
 Ứng dụng sẵn sàng cho việc deployment và có thể dễ dàng mở rộng thêm các tính năng mới trong tương lai! 🚀

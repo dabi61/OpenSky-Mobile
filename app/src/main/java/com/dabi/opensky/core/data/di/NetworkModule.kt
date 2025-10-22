@@ -9,6 +9,7 @@ import com.dabi.opensky.core.data.remote.api.HotelService
 import com.dabi.opensky.core.data.remote.api.LoginService
 import com.dabi.opensky.core.data.remote.api.ProfileService
 import com.dabi.opensky.core.data.remote.api.RoomService
+import com.dabi.opensky.core.data.remote.api.VoucherService
 import com.dabi.opensky.core.event.AppEventManager
 import dagger.Module
 import dagger.Provides
@@ -113,4 +114,7 @@ object NetworkModule {
 
     @Provides @Singleton
     fun provideBillingApi(retrofit: Retrofit): BillService = retrofit.create(BillService::class.java)
+
+    @Provides @Singleton
+    fun provideVoucherApi(retrofit: Retrofit): VoucherService = retrofit.create(VoucherService::class.java)
 }

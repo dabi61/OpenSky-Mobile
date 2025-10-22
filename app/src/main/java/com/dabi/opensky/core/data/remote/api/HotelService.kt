@@ -1,5 +1,6 @@
 package com.dabi.opensky.core.data.remote.api
 
+import com.dabi.opensky.core.model.ProvincesResponse
 import com.dabi.opensky.core.model.hotel.Hotel
 import com.dabi.opensky.core.model.hotel.HotelDetailResponse
 import com.dabi.opensky.core.model.hotel.HotelSearchResponse
@@ -12,29 +13,7 @@ import retrofit2.http.*
  * Base URL: https://opensky-be-production.up.railway.app/
  */
 interface HotelService {
-    
-    /**
-     * Search hotels với các filter parameters
-     * GET /hotels/search
-     */
-    @GET("hotels/search")
-    suspend fun searchHotels(
-        @Query("q") query: String? = null,
-        @Query("province") province: String? = null,
-        @Query("address") address: String? = null,
-        @Query("stars") stars: Int? = null,
-        @Query("minPrice") minPrice: Double? = null,
-        @Query("maxPrice") maxPrice: Double? = null,
-        @Query("sortBy") sortBy: String = "name",
-        @Query("sortOrder") sortOrder: String = "asc",
-        @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 10
-    ): Response<HotelSearchResponse>
-    
-    /**
-     * Get hotel by ID với thông tin chi tiết và user
-     * GET /hotels/{hotelId}
-     */
+
     @GET("hotels/{hotelId}")
     suspend fun getHotelById(@Path("hotelId") hotelId: String): Response<HotelDetailResponse>
     
@@ -60,25 +39,32 @@ interface HotelService {
         @Query("page") page: Int = 1
     ): Response<HotelSearchResponse>
     
-    /**
-     * Get hotels by province ID với pagination mới
-     * GET /hotels/province/{provinceId}
-     */
-    @GET("hotels/province/{provinceId}")
-    suspend fun getHotelsByProvinceId(
-        @Path("provinceId") provinceId: Int,
+
+    /** Search theo keyword */
+    @GET("hotels/search")
+    suspend fun searchHotels(
+        @Query("q") keyword: String?,
         @Query("page") page: Int = 1,
-        @Query("size") size: Int = 10
-    ): Response<HotelsByProvinceResponse>
-    
-    /**
-     * Get hotels by province name (backward compatibility)
-     * GET /hotels/by-province/{province}
-     */
-    @GET("hotels/by-province/{province}")
+        @Query("limit") limit: Int = 20
+    ): Response<HotelSearchResponse> // (giữ model chuẩn cũ nếu bạn đã có)
+
+    /** Danh sách tỉnh */
+    @GET("hotels/provinces")
+    suspend fun getProvinces(): Response<ProvincesResponse>
+
+    /** Lấy khách sạn theo tỉnh (chọn từ danh sách provinces) */
+    @GET("hotels/province/{province}")
     suspend fun getHotelsByProvince(
         @Path("province") province: String,
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 10
-    ): Response<HotelSearchResponse>
+        @Query("size") size: Int = 20
+    ): Response<HotelsByProvinceResponse> // fields: currentPage, pageSize, ...
+
+    /** Lấy khách sạn theo số sao */
+    @GET("hotels/star/{stars}")
+    suspend fun getHotelsByStars(
+        @Path("stars") stars: Int,
+        @Query("page") page: Int = 1,
+        @Query("size") size: Int = 20
+    ): Response<HotelsByProvinceResponse> // cùng shape như theo tỉnh
 }

@@ -8,6 +8,8 @@ import com.dabi.opensky.core.data.repository.login.AuthRepository
 import com.dabi.opensky.core.data.repository.login.AuthRepositoryImpl
 import com.dabi.opensky.core.data.repository.room.RoomRepository
 import com.dabi.opensky.core.data.repository.room.RoomRepositoryImpl
+import com.dabi.opensky.core.data.repository.voucher.VoucherRepository
+import com.dabi.opensky.core.data.repository.voucher.VoucherRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -42,5 +44,9 @@ abstract class RepositoryModule {
         billingRepository: BillingRepositoryImpl
     ): BillingRepository
 
-
+    @Binds
+    @Singleton
+    abstract fun bindVoucherRepository(
+        voucherRepository: VoucherRepositoryImpl
+    ): VoucherRepository
 }

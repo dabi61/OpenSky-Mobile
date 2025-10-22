@@ -26,3 +26,10 @@ data class AuthRequest(
     @Json(name = "password")
     val password: String,
 )
+
+@JsonClass(generateAdapter = true)
+data class RegisterRequest(
+    @Json(name = "email") val email: String,
+    @Json(name = "password") val password: String,
+    @Json(name = "fullName") val fullName: String
+)

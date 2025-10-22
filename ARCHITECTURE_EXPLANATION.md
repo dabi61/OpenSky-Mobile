@@ -14,10 +14,10 @@ interface SessionStore {
 ```
 
 **Trách nhiệm:**
-- ✅ Lưu trữ token vào DataStore (persistence)
-- ✅ Cung cấp StateFlow để observe token state
-- ✅ Thread-safe operations
-- ✅ Cache token trong memory
+-  Lưu trữ token vào DataStore (persistence)
+-  Cung cấp StateFlow để observe token state
+-  Thread-safe operations
+-  Cache token trong memory
 
 ### AuthRepository (Business Logic)
 ```kotlin
@@ -29,10 +29,10 @@ interface AuthRepository {
 ```
 
 **Trách nhiệm:**
-- ✅ Gọi API login/logout
-- ✅ Parse response và convert sang internal format
-- ✅ Business logic validation
-- ✅ Handle errors và retry logic
+-  Gọi API login/logout
+-  Parse response và convert sang internal format
+-  Business logic validation
+-  Handle errors và retry logic
 
 ### Lợi ích của việc tách:
 
@@ -143,9 +143,9 @@ fun NavGraphBuilder.openSkyNavigation(navController: NavHostController) {
     composable<OpenSkyScreen.Home> { HomeScreen() }
 }
 ```
-- ✅ Standard Compose Navigation
-- ✅ Type-safe với Kotlin Serialization
-- ✅ Simple và direct
+-  Standard Compose Navigation
+-  Type-safe với Kotlin Serialization
+-  Simple và direct
 
 #### Layer 2: core/navigation/ (Custom Navigation)
 ```kotlin
@@ -190,12 +190,12 @@ class LoginViewModel(
 
 ### Khi nào dùng gì?
 
-#### ✅ **Dùng Compose Navigation khi:**
+####  **Dùng Compose Navigation khi:**
 - Simple navigation giữa screens
 - Không cần result callback
 - Không cần testing navigation logic
 
-#### ✅ **Dùng Custom Navigator khi:**
+####  **Dùng Custom Navigator khi:**
 - Cần navigate với result
 - Cần testing navigation
 - Complex navigation flows
@@ -215,11 +215,11 @@ DataStore (Persistence)
 ```
 
 ### Benefits:
-- ✅ **Separation of Concerns**
-- ✅ **Testable Architecture**
-- ✅ **Reusable Components**
-- ✅ **Type Safety**
-- ✅ **Automatic Token Management**
-- ✅ **Flexible Navigation**
+-  **Separation of Concerns**
+-  **Testable Architecture**
+-  **Reusable Components**
+-  **Type Safety**
+-  **Automatic Token Management**
+-  **Flexible Navigation**
 
 Bạn có thể sử dụng cả 2 layer navigation tùy theo nhu cầu của từng screen!

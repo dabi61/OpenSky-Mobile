@@ -82,9 +82,9 @@ fun OpenSkyNavHost(
 //        else -> false
 //    }
 
-    // ✅ Tạo navigator một lần từ navController hiện tại
+    //  Tạo navigator một lần từ navController hiện tại
 
-//    / ✅ BƠM LocalComposeNavigator CHO TOÀN BỘ CÂY
+//    / BƠM LocalComposeNavigator CHO TOÀN BỘ CÂY
     SharedTransitionLayout {
         NavHost(
             navController = navController,

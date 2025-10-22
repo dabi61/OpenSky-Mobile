@@ -7,9 +7,11 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,18 +42,26 @@ import com.dabi.opensky.core.designsystem.component.CustomBottomNavigation
 import com.dabi.opensky.core.designsystem.component.FabGroup
 import com.dabi.opensky.core.designsystem.component.getRenderEffect
 import com.dabi.opensky.R
+import com.dabi.opensky.core.model.voucher.Voucher
+import com.dabi.opensky.core.navigation.currentComposeNavigator
+import com.dabi.opensky.feature.voucher.HomeViewModel
+import kotlinx.coroutines.launch
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onHotelClick: (String) -> Unit = {},
+    onExploreHotels: () -> Unit = {},
     hotelViewModel: HotelViewModel = hiltViewModel(),
+    homeViewModel: HomeViewModel = hiltViewModel(),
     sessionViewModel: SessionViewModel
 ) {
 
     val uiState by hotelViewModel.state.collectAsStateWithLifecycle()
     var search by remember { mutableStateOf(uiState.searchQuery) }
-
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope() // <<< NEW
     // ====== FAB Menu state & animations (copy từ MainScreen) ======
     val isMenuExtended = remember { mutableStateOf(false) }
 
@@ -79,7 +89,9 @@ fun HomeScreen(
 //        }
 //    }
     // ============ HomeScreen: CONTENT mới theo ảnh ============
-    Scaffold { paddingValues ->
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -111,31 +123,50 @@ fun HomeScreen(
                 }
 
                 // Categories
+                // trong LazyColumn item nơi bạn gọi CategoryRow:
                 item {
                     CategoryRow(
-                        modifier = Modifier.padding(top = 12.dp, start = 12.dp, end = 12.dp)
+                        modifier = Modifier.padding(top = 12.dp, start = 12.dp, end = 12.dp),
+                        onCategoryClick = {
+                            when (it) {
+                                CategoryType.Hotel -> onExploreHotels()
+                                CategoryType.Tour -> {}
+                                CategoryType.Activity -> {}
+                            }
+                        }
                     )
                 }
 
                 // Ưu đãi
+//                item {
+//                    Text(
+//                        text = "Ưu đãi",
+//                        style = MaterialTheme.typography.titleMedium,
+//                        fontWeight = FontWeight.SemiBold,
+//                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+//                    )
+//                }
+//                item {
+//                    PromoCard(
+//                        code = "SUNWORLDDANANG",
+//                        title = "Tặng vé tham quan Sun World",
+//                        subtitle = "Cho khách hàng đi tour Đà Nẵng",
+//                        onSave = { /* TODO: handle save */ },
+//                        modifier = Modifier.padding(horizontal = 16.dp)
+//                    )
+//                }
+// ===== ƯU ĐÃI (VOUCHER) — NEW =====
                 item {
-                    Text(
-                        text = "Ưu đãi",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    VoucherSection(
+                        vm = homeViewModel,
+                        onSaveSuccess = { msg ->
+                            scope.launch { snackbarHostState.showSnackbar(message = "Lưu thành công") }
+                        },
+                        onSaveFail = { msg ->
+                            scope.launch { snackbarHostState.showSnackbar(message = "Lưu thất bại!") }
+                        }
                     )
                 }
-                item {
-                    PromoCard(
-                        code = "SUNWORLDDANANG",
-                        title = "Tặng vé tham quan Sun World",
-                        subtitle = "Cho khách hàng đi tour Đà Nẵng",
-                        onSave = { /* TODO: handle save */ },
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                }
-
                 // Khuyến mãi cho bạn
                 item {
                     Text(
@@ -183,16 +214,16 @@ fun HomeScreen(
                 }
 
                 // error + load more (giữ nguyên logic)
-                if (uiState.isLoadingMore) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
-                    }
-                }
+//                if (uiState.isLoadingMore) {
+//                    item {
+//                        Box(
+//                            modifier = Modifier
+//                                .fillMaxWidth()
+//                                .padding(16.dp),
+//                            contentAlignment = Alignment.Center
+//                        ) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
+//                    }
+//                }
                 uiState.errorMessage?.let { error ->
                     item {
                         Card(
@@ -266,7 +297,7 @@ fun HomeScreen(
                 .wrapContentHeight(),
             placeholder = { Text("Nhập nội dung tìm kiếm…", color = placeholderColor) },
             singleLine = true,
-            shape = shape,                       // ✅ bo tròn theo tham số
+            shape = shape,                       //  bo tròn theo tham số
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = fieldBg,
                 unfocusedContainerColor = fieldBg,
@@ -292,9 +323,11 @@ fun HomeScreen(
         )
     }
 }
-
 @Composable
-private fun CategoryRow(modifier: Modifier = Modifier) {
+private fun CategoryRow(
+    modifier: Modifier = Modifier,
+    onCategoryClick: (CategoryType) -> Unit // <<< NEW
+) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -303,19 +336,22 @@ private fun CategoryRow(modifier: Modifier = Modifier) {
             title = "Khách sạn",
             bg = Color(0xFFFFF4E6),
             drawableRes = R.drawable.img_1,
-            modifier = Modifier.weight(1f)   // ✅ weight ở RowScope
+            modifier = Modifier.weight(1f),
+            onClick = { onCategoryClick(CategoryType.Hotel) } // <<< NEW
         )
         CategoryItem(
             title = "Tour",
             bg = Color(0xFFEFF7FF),
             drawableRes = R.drawable.img_2,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            onClick = { onCategoryClick(CategoryType.Tour) } // <<< NEW
         )
         CategoryItem(
             title = "Hoạt động",
             bg = Color(0xFFFFF0F3),
             drawableRes = R.drawable.img_3,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            onClick = { onCategoryClick(CategoryType.Activity) } // <<< NEW
         )
     }
 }
@@ -325,11 +361,12 @@ private fun CategoryItem(
     title: String,
     bg: Color,
     @DrawableRes drawableRes: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit // <<< NEW
 ) {
     Card(
-        modifier = modifier   // ✅ dùng modifier truyền vào
-            .height(164.dp),
+        onClick = onClick, // <<< NEW
+        modifier = modifier.height(164.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -348,8 +385,7 @@ private fun CategoryItem(
                 AsyncImage(
                     model = drawableRes,
                     contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
             }
@@ -499,3 +535,153 @@ private fun CategoryItem(
             }
         }
     }
+
+
+@Composable
+fun VoucherSection(
+    vm: HomeViewModel,
+    onSaveSuccess: (String) -> Unit, // snackbar callback
+    onSaveFail: (String) -> Unit
+) {
+    val state by vm.voucherState.collectAsState()
+
+    // show snackbar message once
+    LaunchedEffect(state.lastSaveMessage) {
+        state.lastSaveMessage?.let {
+            if (it.contains("Đã lưu")) onSaveSuccess(it) else onSaveFail(it)
+            vm.clearVoucherMessage()
+        }
+    }
+
+    Column {
+        Text(
+            text = "Ưu đãi",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+
+        if (state.isLoading && state.vouchers.isEmpty()) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.Center
+            ) { CircularProgressIndicator() }
+        } else if (state.errorMessage != null) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    Text(state.errorMessage!!, color = MaterialTheme.colorScheme.onErrorContainer)
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(onClick = { vm.clearVoucherError(); vm.loadVouchers(1) }) { Text("Thử lại") }
+                }
+            }
+        } else {
+            // Horizontal scroll cards
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                state.vouchers.forEach { v ->
+                    VoucherCardBlue(voucher = v, onSave = { vm.saveVoucher(v.voucherID) })
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun VoucherCardBlue(
+    voucher: Voucher,
+    onSave: () -> Unit
+) {
+    val blue = Color(0xFF0EA5E9) // sky blue
+    val deep = Color(0xFF0369A1)
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.width(280.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                color = blue.copy(alpha = 0.15f),
+                shape = CircleShape,
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Place,
+                        contentDescription = null,
+                        tint = deep
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp)
+            ) {
+                Text(
+                    text = voucher.description ?: when (voucher.tableType) {
+                        "Hotel" -> "Giảm ${voucher.percent}% cho khách sạn"
+                        "Tour" -> "Giảm ${voucher.percent}% cho tour"
+                        else -> "Giảm ${voucher.percent}%"
+                    },
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Mã: ${voucher.code}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = voucher.code,
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    Button(
+                        onClick = onSave,
+                        enabled = voucher.isAvailable && !voucher.isExpired,
+                        modifier = Modifier.height(40.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = blue)
+                    ) { Text("Lưu") }
+                }
+
+                if (!voucher.isAvailable || voucher.isExpired) {
+                    Spacer(Modifier.height(6.dp))
+                    AssistChip(
+                        onClick = {},
+                        label = { Text(if (voucher.isExpired) "Đã hết hạn" else "Không khả dụng") },
+                        enabled = false,
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = Color(0xFFF2F4F7)
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+enum class CategoryType { Hotel, Tour, Activity }
