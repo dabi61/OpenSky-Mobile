@@ -51,8 +51,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    onHotelClick: (String) -> Unit = {},
+    onHotelClick: (String, Double) -> Unit,
     onExploreHotels: () -> Unit = {},
+    onExploreTours: () -> Unit = {},
     hotelViewModel: HotelViewModel = hiltViewModel(),
     homeViewModel: HomeViewModel = hiltViewModel(),
     sessionViewModel: SessionViewModel
@@ -130,7 +131,7 @@ fun HomeScreen(
                         onCategoryClick = {
                             when (it) {
                                 CategoryType.Hotel -> onExploreHotels()
-                                CategoryType.Tour -> {}
+                                CategoryType.Tour -> onExploreTours()
                                 CategoryType.Activity -> {}
                             }
                         }
@@ -198,14 +199,14 @@ fun HomeScreen(
                             row.getOrNull(0)?.let { h ->
                                 HotelPromoCard(
                                     hotel = h,
-                                    onClick = { onHotelClick(h.hotelID) },
+                                    onClick = { onHotelClick(h.hotelID,  h.displayMinPrice) },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
                             row.getOrNull(1)?.let { h ->
                                 HotelPromoCard(
                                     hotel = h,
-                                    onClick = { onHotelClick(h.hotelID) },
+                                    onClick = { onHotelClick(h.hotelID, h.displayMinPrice) },
                                     modifier = Modifier.weight(1f)
                                 )
                             } ?: Spacer(Modifier.weight(1f))

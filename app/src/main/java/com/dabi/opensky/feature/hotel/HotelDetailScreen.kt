@@ -48,6 +48,7 @@ data class HotelReview(
 @Composable
 fun HotelDetailScreen(
     hotelId: String,
+    price: Double,
     onBackClick: () -> Unit,
     onSeeRooms: (HotelDetailResponse) -> Unit = {},
     onSeeAllReviews: (HotelDetailResponse) -> Unit = {},
@@ -55,7 +56,6 @@ fun HotelDetailScreen(
     viewModel: HotelDetailViewModel = hiltViewModel()
 ) {
     val hotelState by viewModel.hotelDetail.collectAsStateWithLifecycle()
-    val navigator = currentComposeNavigator
 
     LaunchedEffect(hotelId) { viewModel.loadHotelDetail(hotelId) }
 
@@ -79,7 +79,7 @@ fun HotelDetailScreen(
             if (hotelState is Resource.Success) {
                 val hotel = (hotelState as Resource.Success<HotelDetailResponse>).data
                 HotelPriceBar(
-                    price = 0.0,
+                    price = price,
                     onSeeRooms = { onSeeRooms(hotel) }
                 )
             }

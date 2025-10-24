@@ -9,6 +9,8 @@ import com.dabi.opensky.core.model.booking.MyBookingsResponse
 import com.dabi.opensky.core.model.booking.SearchBookingsResponse
 import com.dabi.opensky.core.model.booking.SimpleMessageResponse
 import com.dabi.opensky.core.model.booking.TourBookingDetail
+import com.dabi.opensky.core.model.booking.TourBookingRequest
+import com.dabi.opensky.core.model.booking.TourBookingResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -59,4 +61,9 @@ interface BookingService {
 
     @GET("bookings/tour/{bookingId}")
     suspend fun getTourBookingDetail(@Path("bookingId") bookingId: String): Response<TourBookingDetail>
+
+
+    @POST("bookings/tour")
+    suspend fun createTourBooking(@Body body: TourBookingRequest): TourBookingResponse
+
 }

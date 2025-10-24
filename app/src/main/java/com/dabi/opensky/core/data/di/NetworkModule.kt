@@ -9,6 +9,9 @@ import com.dabi.opensky.core.data.remote.api.HotelService
 import com.dabi.opensky.core.data.remote.api.LoginService
 import com.dabi.opensky.core.data.remote.api.ProfileService
 import com.dabi.opensky.core.data.remote.api.RoomService
+import com.dabi.opensky.core.data.remote.api.ScheduleService
+import com.dabi.opensky.core.data.remote.api.TourGuideService
+import com.dabi.opensky.core.data.remote.api.TourService
 import com.dabi.opensky.core.data.remote.api.VoucherService
 import com.dabi.opensky.core.event.AppEventManager
 import dagger.Module
@@ -117,4 +120,13 @@ object NetworkModule {
 
     @Provides @Singleton
     fun provideVoucherApi(retrofit: Retrofit): VoucherService = retrofit.create(VoucherService::class.java)
+
+    @Provides @Singleton
+    fun provideTourApi(retrofit: Retrofit): TourService = retrofit.create(TourService::class.java)
+
+    @Provides @Singleton
+    fun provideScheduleApi(retrofit: Retrofit): ScheduleService = retrofit.create(ScheduleService::class.java)
+
+    @Provides @Singleton
+    fun provideTourGuideApi(retrofit: Retrofit): TourGuideService = retrofit.create(TourGuideService::class.java)
 }

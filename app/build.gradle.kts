@@ -115,10 +115,16 @@ dependencies {
     implementation(libs.moshi.kotlin)
     ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.2")
     implementation(libs.okhttp.loggingInterceptor)
-    
+
+    implementation("androidx.compose.material:material-icons-extended:<compose_version>")
+
     // Image loading
     implementation("io.coil-kt:coil-compose:2.7.0")
 //    implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
 
     implementation("com.google.zxing:core:3.5.3")
+
+    implementation("androidx.compose.material3:material3:1.2.1")
+// hoặc mới hơn
+
 }

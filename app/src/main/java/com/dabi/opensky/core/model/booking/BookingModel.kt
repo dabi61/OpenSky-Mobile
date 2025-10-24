@@ -115,3 +115,17 @@ data class SimpleMessageResponse(
     @Json(name = "message") val message: String
 )
 
+// --------- Tour booking (create) ---------
+@JsonClass(generateAdapter = true)
+data class TourBookingRequest(
+    @Json(name = "scheduleID") val scheduleID: String,
+    @Json(name = "numberOfGuests") val numberOfGuests: Int,
+    @Json(name = "notes") val notes: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class TourBookingResponse(
+    @Json(name = "bookingId") val bookingId: String,
+    @Json(name = "billId") val billId: String,
+    @Json(name = "message") val message: String
+)

@@ -4,7 +4,12 @@ import com.dabi.opensky.core.model.ProvincesResponse
 import com.dabi.opensky.core.model.hotel.Hotel
 import com.dabi.opensky.core.model.hotel.HotelDetailResponse
 import com.dabi.opensky.core.model.hotel.HotelSearchResponse
+import com.dabi.opensky.core.model.hotel.HotelUpdateResponse
 import com.dabi.opensky.core.model.hotel.HotelsByProvinceResponse
+import com.dabi.opensky.core.model.hotel.MyHotelResponse
+import com.dabi.opensky.core.model.hotel.OwnerHotelUpdateResponse
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -67,4 +72,23 @@ interface HotelService {
         @Query("page") page: Int = 1,
         @Query("size") size: Int = 20
     ): Response<HotelsByProvinceResponse> // cùng shape như theo tỉnh
+
+    @GET("hotels/my-hotels")
+    suspend fun getMyHotels(): Response<List<MyHotelResponse>>
+
+    /** UPDATE (multipart) cho chủ khách sạn */
+    @Multipart
+    @PUT("hotels/{hotelId}")
+    suspend fun updateOwnerHotel(
+        @Path("hotelId") hotelId: String,
+        @Part("hotelName") hotelName: RequestBody?,
+        @Part("description") description: RequestBody?,
+        @Part("address") address: RequestBody?,
+        @Part("province") province: RequestBody?,
+        @Part("latitude") latitude: RequestBody?,
+        @Part("longitude") longitude: RequestBody?,
+        @Part("existingImageIds") existingImageIdsCsv: RequestBody?, // "121,122"
+        @Part("deleteImageIds") deleteImageIdsCsv: RequestBody?,     // "123,124"
+        @Part files: List<MultipartBody.Part>?                       // new images
+    ): Response<OwnerHotelUpdateResponse>
 }

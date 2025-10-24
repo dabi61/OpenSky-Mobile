@@ -10,11 +10,23 @@ import com.dabi.opensky.core.model.hotel.Hotel
 import com.dabi.opensky.core.model.hotel.HotelDetailResponse
 import com.dabi.opensky.core.model.hotel.HotelSearchRequest
 import com.dabi.opensky.core.model.hotel.HotelSearchResponse
+import com.dabi.opensky.core.model.hotel.HotelUpdatePayload
+import com.dabi.opensky.core.model.hotel.HotelUpdateResponse
+import com.dabi.opensky.core.model.hotel.MyHotelResponse
+import com.dabi.opensky.core.model.hotel.OwnerHotelUpdateResponse
+import com.dabi.opensky.core.model.hotel.toHotel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retryWhen
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -241,4 +253,81 @@ class HotelRepository @Inject constructor(
         featuredCache.value = emptyList()
         synchronized(lru) { lru.clear() }
     }
+
+
+    fun getMyHotels(): Flow<Resource<List<Hotel>>> = flow {
+        emit(Resource.Loading)
+        when (val res = apiCall { hotelApi.getMyHotels() }) {
+            is Resource.Success -> emit(Resource.Success(res.data.map { it.toHotel() }))
+            is Resource.Error   -> emit(res)
+            Resource.Loading    -> Unit
+        }
+    }
+
+
+
+    fun getMyHotelById(hotelId: String): Flow<Resource<MyHotelResponse?>> = flow {
+        emit(Resource.Loading)
+        when (val res = apiCall { hotelApi.getMyHotels() }) {
+            is Resource.Success -> emit(Resource.Success(res.data.firstOrNull { it.hotelID == hotelId }))
+            is Resource.Error -> emit(Resource.Error(res.cause))
+            Resource.Loading -> Unit
+        }
+    }
+
+    /**
+     * Update hotel by multipart. Gửi chỉ field có thay đổi (null nếu bỏ qua).
+     * existingImageIdsCsv: "121,122" | null nếu không gửi
+     * deleteImageIdsCsv: "123,124"  | null nếu không gửi
+     */
+    fun updateOwnerHotel(
+        hotelId: String,
+        hotelName: String?,
+        description: String?,
+        address: String?,
+        province: String?,
+        latitude: String?,
+        longitude: String?,
+        existingImageIdsCsv: String?,
+        deleteImageIdsCsv: String?,
+        newImageFiles: List<File>?
+    ): Flow<Resource<OwnerHotelUpdateResponse>> = flow {
+        emit(Resource.Loading)
+
+        fun String?.toPart(): RequestBody? = this?.let {
+            it.toRequestBody("text/plain".toMediaTypeOrNull())
+        }
+
+        val parts = newImageFiles?.mapIndexed { idx, file ->
+            val body = file.asRequestBody("image/*".toMediaTypeOrNull())
+            MultipartBody.Part.createFormData("files", file.name, body)
+        }
+
+        emit(
+            apiCall {
+                hotelApi.updateOwnerHotel(
+                    hotelId = hotelId,
+                    hotelName = hotelName.toPart(),
+                    description = description.toPart(),
+                    address = address.toPart(),
+                    province = province.toPart(),
+                    latitude = latitude.toPart(),
+                    longitude = longitude.toPart(),
+                    existingImageIdsCsv = existingImageIdsCsv.toPart(),
+                    deleteImageIdsCsv = deleteImageIdsCsv.toPart(),
+                    files = parts
+                )
+            }
+        )
+    }
+
+    private fun guessImageMime(filename: String): String =
+        when {
+            filename.endsWith(".png", true) -> "image/png"
+            filename.endsWith(".webp", true) -> "image/webp"
+            filename.endsWith(".heic", true) -> "image/heic"
+            else -> "image/jpeg"
+        }
+
+
 }

@@ -48,6 +48,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.material.icons.filled.Discount
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -281,7 +282,7 @@ fun FabGroup(
                 ),
             opacity = LinearEasing.transform(0.2f, 0.7f, animationProgress),
             onClick = {
-                composeNavigation.navigate(OpenSkyScreen.Search)
+                composeNavigation.navigate(OpenSkyScreen.ExploreTour)
             }
         )
 
@@ -305,7 +306,7 @@ fun FabGroup(
         )
 
         AnimateFab(
-            icon = Icons.Default.Settings,
+            icon = Icons.Default.Discount,
             modifier = Modifier
                 .padding(
                     PaddingValues(
@@ -313,7 +314,10 @@ fun FabGroup(
                         start = 210.dp
                     ) * FastOutSlowInEasing.transform(0.2f, 1.0f, animationProgress)
                 ),
-            opacity = LinearEasing.transform(0.4f, 0.9f, animationProgress)
+            opacity = LinearEasing.transform(0.4f, 0.9f, animationProgress),
+            onClick = {
+                composeNavigation.navigate(OpenSkyScreen.MyVouchers)
+            }
         )
 
         AnimateFab(

@@ -3,14 +3,19 @@ package com.dabi.opensky.feature.booking
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,24 +37,23 @@ fun BookingDetailScreen(
 
     LaunchedEffect(bookingId) { viewModel.load(bookingId) }
 
-    // phản hồi check-in
+    // feedback check-in/out
     LaunchedEffect(ui.checkInAction) {
-        val action = ui.checkInAction ?: return@LaunchedEffect
-        when (action) {
-            is Resource.Success -> snack.showSnackbar(action.data.message)
-            is Resource.Error -> snack.showSnackbar(action.cause.message ?: "Check-in thất bại")
+        when (val a = ui.checkInAction) {
+            is Resource.Success -> snack.showSnackbar(a.data.message)
+            is Resource.Error -> snack.showSnackbar(a.cause.message ?: "Check-in thất bại")
             else -> Unit
         }
     }
-    // phản hồi check-out
     LaunchedEffect(ui.checkOutAction) {
-        val action = ui.checkOutAction ?: return@LaunchedEffect
-        when (action) {
-            is Resource.Success -> snack.showSnackbar(action.data.message)
-            is Resource.Error -> snack.showSnackbar(action.cause.message ?: "Check-out thất bại")
+        when (val a = ui.checkOutAction) {
+            is Resource.Success -> snack.showSnackbar(a.data.message)
+            is Resource.Error -> snack.showSnackbar(a.cause.message ?: "Check-out thất bại")
             else -> Unit
         }
     }
+
+    val detail = ui.data
 
     Scaffold(
         topBar = {
@@ -58,11 +62,40 @@ fun BookingDetailScreen(
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } }
             )
         },
-        snackbarHost = { SnackbarHost(snack) }
+        snackbarHost = { SnackbarHost(snack) },
+//        bottomBar = {
+//            if (detail != null) {
+//                val enableCheckIn = ui.canCheckIn()               // theo logic mới
+//                val showCheckOut = ui.showCheckOutButton()       // chỉ khi đã check-in
+//
+//                BottomAppBar {
+//                    if (showCheckOut) {
+//                        OutlinedButton(
+//                            onClick = { viewModel.doCheckOut() },
+//                            enabled = ui.checkOutAction !is Resource.Loading,
+//                            modifier = Modifier.weight(1f)
+//                        ) {
+//                            if (ui.checkOutAction is Resource.Loading) {
+//                                CircularProgressIndicator(Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
+//                            }
+//                            Text("Check-out")
+//                        }
+//                        Spacer(Modifier.width(12.dp))
+//                    }
+//                    Button(
+//                        onClick = { viewModel.doCheckIn() },
+//                        enabled = enableCheckIn && ui.checkInAction !is Resource.Loading,
+//                        modifier = Modifier.weight(1f)
+//                    ) {
+//                        if (ui.checkInAction is Resource.Loading) {
+//                            CircularProgressIndicator(Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
+//                        }
+//                        Text("Check-in")
+//                    }
+//                }
+//            }
+//        }
     ) { padding ->
-
-        val detail = ui.data
-
         when {
             ui.isLoading && detail == null -> {
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -82,7 +115,6 @@ fun BookingDetailScreen(
                 }
             }
             detail != null -> {
-                // --- CHỈ VÀO ĐÂY KHI detail != null ---
                 val zone = ZoneId.systemDefault()
                 val ci = runCatching { Instant.parse(detail.checkInDate).atZone(zone).toLocalDate() }
                     .getOrNull()?.toString() ?: detail.checkInDate
@@ -90,89 +122,92 @@ fun BookingDetailScreen(
                     .getOrNull()?.toString() ?: detail.checkOutDate
 
                 LazyColumn(
-                    modifier = Modifier.padding(padding).fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
+                    modifier = Modifier
+                        .padding(padding)
+                        .fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 96.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // Header
                     item {
-                        Text(detail.hotelName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(4.dp))
-                        Text(detail.hotelAddress, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(Modifier.height(8.dp))
-                        Text("Nhận phòng: $ci  •  Trả phòng: $co")
-                        Text("Đêm: ${detail.numberOfNights}")
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            AssistChip(onClick = {}, label = { Text("Trạng thái: ${detail.status}") })
-                            detail.paymentStatus?.takeIf { it.isNotBlank() }?.let {
-                                AssistChip(onClick = {}, label = { Text("Thanh toán: $it") })
+                        Card(
+                            shape = RoundedCornerShape(28.dp),
+                            elevation = CardDefaults.cardElevation(2.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                Text(detail.hotelName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                Spacer(Modifier.height(4.dp))
+                                Text(detail.hotelAddress, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.height(10.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    StatusChip(detail.status)
+                                    detail.paymentStatus?.takeIf { it.isNotBlank() }?.let { PayChip(it) }
+                                }
                             }
                         }
-                        detail.notes?.takeIf { it.isNotBlank() }?.let {
-                            Spacer(Modifier.height(6.dp))
-                            Text("Ghi chú: $it")
+                    }
+                    // Info
+                    item {
+                        Card(shape = RoundedCornerShape(24.dp), elevation = CardDefaults.cardElevation(1.dp)) {
+                            Column(Modifier.padding(16.dp)) {
+                                Text("Thông tin đặt phòng", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                Spacer(Modifier.height(10.dp))
+                                InfoRow("Nhận phòng", ci)
+                                Spacer(Modifier.height(6.dp))
+                                InfoRow("Trả phòng", co)
+                                Spacer(Modifier.height(6.dp))
+                                InfoRow("Số đêm", detail.numberOfNights.toString())
+                                detail.notes?.takeIf { it.isNotBlank() }?.let {
+                                    Spacer(Modifier.height(10.dp)); Text("Ghi chú: $it")
+                                }
+                            }
                         }
                     }
-
+                    // Rooms
                     item {
-                        Card {
-                            Column(Modifier.padding(12.dp)) {
+                        Card(shape = RoundedCornerShape(24.dp), elevation = CardDefaults.cardElevation(1.dp)) {
+                            Column(Modifier.padding(16.dp)) {
                                 Text("Chi tiết phòng", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                 Spacer(Modifier.height(8.dp))
                                 detail.roomDetails.forEach { RoomRow(it) }
-                                Spacer(Modifier.height(6.dp))
-                                Text("Tổng tiền: ${detail.totalPrice.toVnd()}",
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Spacer(Modifier.height(10.dp))
+                                InfoRow("Tổng tiền", detail.totalPrice.toVnd())
                             }
                         }
                     }
-
-                    item {
-                        val enableCheckIn = ui.canCheckIn()
-                        val enableCheckOut = ui.canCheckOut()
-
-                        Column {
-                            Button(
-                                onClick = { viewModel.doCheckIn() },
-                                enabled = enableCheckIn && ui.checkInAction !is Resource.Loading,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                if (ui.checkInAction is Resource.Loading) {
-                                    CircularProgressIndicator(Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
-                                }
-                                Text("Check-in")
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            OutlinedButton(
-                                onClick = { viewModel.doCheckOut() },
-                                enabled = enableCheckOut && ui.checkOutAction !is Resource.Loading,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                if (ui.checkOutAction is Resource.Loading) {
-                                    CircularProgressIndicator(Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
-                                }
-                                Text("Check-out")
-                            }
-                            if (!enableCheckIn) {
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "Không thể check-in lúc này. Hãy đảm bảo đã đến ngày nhận phòng và hóa đơn đã thanh toán.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
+                    // Timeline
+//                    item {
+//                        Card(shape = RoundedCornerShape(24.dp), elevation = CardDefaults.cardElevation(0.dp)) {
+//                            Column(Modifier.padding(16.dp)) {
+//                                Text("Lịch trình", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+//                                Spacer(Modifier.height(8.dp))
+//                                TimelineRow("Đặt phòng", "Hoàn tất đơn", active = true)
+//                                TimelineRow("Check-in", "Tại quầy lễ tân / quét QR", active = ui.canCheckIn())
+//                                TimelineRow("Check-out", "Thanh lý / trả phòng", active = ui.showCheckOutButton())
+//                            }
+//                        }
+//                    }
                 }
             }
             else -> {
-                // Trạng thái hiếm: không loading, không error nhưng data vẫn null → coi như loading
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
+        }
+    }
+}
+
+/* ==== Helpers UI (giữ nguyên như bạn đang có) ==== */
+@Composable private fun TimelineRow(title: String, subtitle: String, active: Boolean) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        val dot = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+        Box(Modifier.size(12.dp).clip(CircleShape).background(dot))
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

@@ -28,3 +28,18 @@ data class HotelSearchRequest(
     val page: Int = 1,
     val limit: Int = 20
 )
+
+
+@JsonClass(generateAdapter = true)
+data class HotelUpdateResponse(
+    @Json(name = "message") val message: String?,
+    @Json(name = "existingImageUrls") val existingImageUrls: List<String> = emptyList(),
+    @Json(name = "newImageUrls") val newImageUrls: List<String> = emptyList(),
+    @Json(name = "deletedImageUrls") val deletedImageUrls: List<String> = emptyList(),
+    @Json(name = "failedUploads") val failedUploads: List<String> = emptyList(),
+    @Json(name = "existingImageCount") val existingImageCount: Int = 0,
+    @Json(name = "newImageCount") val newImageCount: Int = 0,
+    @Json(name = "deletedImageCount") val deletedImageCount: Int = 0,
+    @Json(name = "failedImageCount") val failedImageCount: Int = 0,
+    @Json(name = "totalImageCount") val totalImageCount: Int = 0
+)

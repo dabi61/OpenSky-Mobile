@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -299,7 +300,7 @@ private fun LoginForm(
         trailingIcon = {
             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                 Icon(
-                    imageVector = if (passwordVisible) Icons.Outlined.Close else Icons.Outlined.Done,
+                    imageVector = if (passwordVisible) Icons.Outlined.Close else Icons.Outlined.RemoveRedEye,
                     contentDescription = if (passwordVisible) "Ẩn mật khẩu" else "Hiện mật khẩu"
                 )
             }
@@ -378,7 +379,7 @@ private fun RegisterForm(
         trailingIcon = {
             IconButton(onClick = { showPass = !showPass }) {
                 Icon(
-                    imageVector = if (showPass) Icons.Outlined.Close else Icons.Outlined.Done,
+                    imageVector = if (showPass) Icons.Outlined.Close else Icons.Outlined.RemoveRedEye,
                     contentDescription = if (showPass) "Ẩn mật khẩu" else "Hiện mật khẩu"
                 )
             }

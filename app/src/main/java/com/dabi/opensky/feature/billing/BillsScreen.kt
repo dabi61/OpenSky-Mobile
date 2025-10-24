@@ -5,6 +5,8 @@ import android.R
 import android.graphics.Bitmap
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,7 +25,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -115,7 +120,10 @@ fun MyBillsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         itemsIndexed(ui.items, key = { _, b -> b.billID }) { _, bill ->
-                            BillCard(bill = bill, onPay = { viewModel.openPayment(it) })
+                            TicketBillCard(
+                                bill = bill,
+                                onPay = { viewModel.openPayment(it) }
+                            )
                         }
                         item {
                             if (ui.isLoading) {
@@ -140,67 +148,226 @@ fun MyBillsScreen(
     }
 }
 
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-private fun BillCard(bill: BillItem,  onPay: (BillItem) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
+private fun TicketBillCard(
+    bill: BillItem,
+    onPay: (BillItem) -> Unit
+) {
+    val isPaid = bill.status.equals("Paid", ignoreCase = true)
+    val accent = if (isPaid) Color(0xFF0EA5E9) else Color(0xFFE53935)
+
+    // QR content (tuỳ bạn: billID/tổng tiền...)
+    val qrBitmap = remember(bill.billID) { generateQrBitmap("bill:${bill.billID}") }
+    val qrImage = remember(qrBitmap) { qrBitmap.asImageBitmap() }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(1.dp)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(Modifier.padding(12.dp)) {
-            // Header
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                StatusDot(text = bill.status)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "Mã: ${bill.billID.take(8)}…",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f),
-                    overflow = TextOverflow.Ellipsis
-                )
-                IconButton(onClick = { expanded = !expanded }) {
-                    Icon(if (expanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp, null)
+        Column {
+            // ---------- Header ----------
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.linearGradient(
+                            listOf(accent.copy(0.9f), accent.copy(0.65f))
+                        ),
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    )
+                    .padding(16.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(
+                                when {
+                                    isPaid -> Color(0xFF2E7D32)
+                                    bill.status.equals("Pending", true) -> Color(0xFFFFA000)
+                                    else -> Color(0xFFC62828)
+                                }
+                            )
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = if (isPaid) "ĐÃ THANH TOÁN" else bill.status.uppercase(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = "Mã: ${bill.billID.take(8)}…",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White
+                    )
                 }
             }
-            Spacer(Modifier.height(4.dp))
-            Text("Khách: ${bill.userName}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(6.dp))
-            Row {
-                Text("Từ: ${bill.startTime.toLocalDateStr()}  ", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("đến: ${bill.endTime.toLocalDateStr()}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                bill.totalPrice.toVnd(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
 
-            // Details
-            if (expanded) {
-                Spacer(Modifier.height(10.dp))
-                bill.billDetails.forEach { d -> BillDetailRow(detail = d) }
+            // ---------- Body ----------
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Text(
+                    text = bill.userName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(Modifier.height(6.dp))
+                Row {
+                    Text(
+                        "Từ: ${bill.startTime.toLocalDateStr()}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "Đến: ${bill.endTime.toLocalDateStr()}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
                 Spacer(Modifier.height(8.dp))
-                if (!bill.notesSummary().isNullOrBlank()) {
-                    Text(bill.notesSummary()!!, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = bill.totalPrice.toVnd(),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = accent
+                )
+
+                Spacer(Modifier.height(10.dp))
+                bill.billDetails.take(3).forEach { d ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "${d.itemType} • ${d.itemName}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(d.totalPrice.toVnd(), style = MaterialTheme.typography.bodyMedium)
+                    }
+                    if (!d.notes.isNullOrBlank()) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            d.notes!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                if (bill.billDetails.size > 3) {
+                    AssistChip(
+                        onClick = { /* TODO: mở trang chi tiết bill nếu muốn */ },
+                        label = { Text("+${bill.billDetails.size - 3} hạng mục") }
+                    )
                 }
             }
-            // Footer actions
-            Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                if (!bill.status.equals("Paid", ignoreCase = true)) {
-                    Button(onClick = { onPay(bill) }) { Text("Thanh toán") }
-                } else {
-                    AssistChip(onClick = {}, label = { Text("Đã thanh toán") })
+
+            // ---------- Perforation ----------
+            PerforationDivider()
+
+            // ---------- QR & actions ----------
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "Quét mã để thanh toán / check-in",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    tonalElevation = 1.dp,
+                    shadowElevation = 2.dp,
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFF9FAFB)
+                ) {
+                    Image(
+                        bitmap = qrImage,
+                        contentDescription = "QR",
+                        modifier = Modifier
+                            .size(160.dp)
+                            .padding(12.dp)
+                    )
                 }
+
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Mã: ${bill.billID.takeLast(10)}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (isPaid) {
+                        AssistChip(onClick = {}, label = { Text("Đã thanh toán") }, enabled = false)
+                    } else {
+                        Button(onClick = { onPay(bill) }) { Text("Thanh toán") }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
             }
         }
     }
 }
+
+@Composable
+private fun PerforationDivider() {
+    Box(Modifier.fillMaxWidth().height(28.dp)) {
+        // Notch 2 bên
+        Box(
+            Modifier
+                .size(28.dp)
+                .align(Alignment.CenterStart)
+                .clip(CircleShape)
+                .background(Color.White)
+        )
+        Box(
+            Modifier
+                .size(28.dp)
+                .align(Alignment.CenterEnd)
+                .clip(CircleShape)
+                .background(Color.White)
+        )
+        // Đường đứt đoạn
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 28.dp)
+                .align(Alignment.Center)
+                .height(1.dp)
+        ) {
+            val dash = 12f
+            val gap = 8f
+            var x = 0f
+            val y = size.height / 2f
+            while (x < size.width) {
+                drawLine(
+                    color = Color.Gray,
+                    start = Offset(x, y),
+                    end = Offset(x + dash, y),
+                    strokeWidth = 3f
+                )
+                x += dash + gap
+            }
+        }
+    }
+}
+
+
 
 @Composable
 private fun StatusDot(text: String) {

@@ -15,6 +15,8 @@ import com.dabi.opensky.core.model.booking.MyBookingsResponse
 import com.dabi.opensky.core.model.booking.SearchBookingsResponse
 import com.dabi.opensky.core.model.booking.SimpleMessageResponse
 import com.dabi.opensky.core.model.booking.TourBookingDetail
+import com.dabi.opensky.core.model.booking.TourBookingRequest
+import com.dabi.opensky.core.model.booking.TourBookingResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.time.Instant
@@ -67,6 +69,17 @@ class BookingRepositoryImpl @Inject constructor(
     override fun checkAvailability(body: AvailabilityRequest): Flow<Resource<AvailabilityResponse>> = flow {
         emit(Resource.Loading)
         emit(apiCall { api.checkAvailability(body) })
+    }
+
+
+    override fun createTourBooking(body: TourBookingRequest): Flow<Resource<TourBookingResponse>> = flow {
+        emit(Resource.Loading)
+        try {
+            val res = api.createTourBooking(body)
+            emit(Resource.Success(res))
+        } catch (t: Throwable) {
+            emit(Resource.Error(t))
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

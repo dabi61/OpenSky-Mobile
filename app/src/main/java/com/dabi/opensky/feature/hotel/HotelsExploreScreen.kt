@@ -81,7 +81,7 @@ import kotlinx.coroutines.launch
 fun HotelsExploreScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onHotelClick: (String) -> Unit,
+    onHotelClick: (String, Double) -> Unit,
     hotelViewModel: HotelViewModel = hiltViewModel(),
 ) {
     val state by hotelViewModel.state.collectAsStateWithLifecycle()
@@ -142,7 +142,7 @@ fun HotelsExploreScreen(
                         items(state.hotels) { h ->
                             HotelPromoCard(
                                 hotel = h,
-                                onClick = { onHotelClick(h.hotelID) }
+                                onClick = { onHotelClick(h.hotelID, h.displayMinPrice) }
                             )
                         }
                     }

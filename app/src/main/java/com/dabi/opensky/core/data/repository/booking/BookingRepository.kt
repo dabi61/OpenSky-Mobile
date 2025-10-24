@@ -11,6 +11,8 @@ import com.dabi.opensky.core.model.booking.MyBookingsResponse
 import com.dabi.opensky.core.model.booking.SearchBookingsResponse
 import com.dabi.opensky.core.model.booking.SimpleMessageResponse
 import com.dabi.opensky.core.model.booking.TourBookingDetail
+import com.dabi.opensky.core.model.booking.TourBookingRequest
+import com.dabi.opensky.core.model.booking.TourBookingResponse
 import kotlinx.coroutines.flow.Flow
 
 interface BookingRepository {
@@ -38,6 +40,9 @@ interface BookingRepository {
     fun checkAvailability(body: AvailabilityRequest): Flow<Resource<AvailabilityResponse>>
     fun getMonthAvailability(roomId: String, year: Int, month: Int): Flow<Resource<MonthAvailability>>
     fun getTourBookingDetail(bookingId: String): Flow<Resource<TourBookingDetail>>
+    // NEW: create tour booking
+    fun createTourBooking(body: TourBookingRequest): Flow<Resource<TourBookingResponse>>
+
 }
 
 data class MonthAvailability(

@@ -1,5 +1,6 @@
 package com.dabi.opensky.core.data.remote.api
 
+import com.dabi.opensky.core.model.voucher.MyVouchersResponse
 import com.dabi.opensky.core.model.voucher.SaveVoucherRequest
 import com.dabi.opensky.core.model.voucher.VoucherListResponse
 import retrofit2.Response
@@ -14,4 +15,10 @@ interface VoucherService {
 
     @POST("user_vouchers")
     suspend fun saveVoucher(@Body body: SaveVoucherRequest): Response<Unit>
+
+    @GET("user_vouchers/my-vouchers")
+    suspend fun getMyVouchers(
+        @Query("page") page: Int = 1,
+        @Query("size") size: Int = 10
+    ): Response<MyVouchersResponse>
 }

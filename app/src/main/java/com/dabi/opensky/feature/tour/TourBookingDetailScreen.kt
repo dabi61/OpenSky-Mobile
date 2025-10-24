@@ -72,7 +72,7 @@ private fun Content(detail: TourBookingDetail) {
 
         // Thông tin tour
         ElevatedCard {
-            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.padding(12.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Thông tin tour", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text("Tên: ${detail.tourInfo.tourName}")
                 detail.tourInfo.location?.let { Text("Địa điểm: $it") }

@@ -21,7 +21,7 @@ import com.dabi.opensky.core.model.hotel.Hotel
 @Composable
 fun FavoritesScreen(
     modifier: Modifier = Modifier,
-    onHotelClick: (String) -> Unit = {}
+    onHotelClick: (String, Double) -> Unit
 ) {
     // TODO: Implement favorites logic with local storage or user preferences
     var favoriteHotels by remember { mutableStateOf(emptyList<Hotel>()) }
@@ -92,7 +92,7 @@ fun FavoritesScreen(
                 items(favoriteHotels) { hotel ->
                     FavoriteHotelCard(
                         hotel = hotel,
-                        onClick = { onHotelClick(hotel.hotelID) },
+                        onClick = { onHotelClick(hotel.hotelID, hotel.displayMinPrice) },
                         onRemoveFavorite = {
                             // TODO: Implement remove from favorites
                         }
