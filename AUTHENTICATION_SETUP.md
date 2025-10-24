@@ -4,13 +4,13 @@
 
 Tôi đã thiết kế và triển khai một hệ thống authentication hoàn chỉnh cho dự án OpenSky của bạn với các tính năng:
 
-- ✅ Xử lý token tự động (access token + refresh token)
-- ✅ Auto refresh token khi access token hết hạn
-- ✅ Lưu trữ an toàn token bằng DataStore
-- ✅ UI đăng nhập đẹp mắt với validation
-- ✅ Navigation tự động dựa trên trạng thái đăng nhập
-- ✅ Interceptor tự động thêm token vào request
-- ✅ Error handling toàn diện
+-  Xử lý token tự động (access token + refresh token)
+-  Auto refresh token khi access token hết hạn
+-  Lưu trữ an toàn token bằng DataStore
+-  UI đăng nhập đẹp mắt với validation
+-  Navigation tự động dựa trên trạng thái đăng nhập
+-  Interceptor tự động thêm token vào request
+-  Error handling toàn diện
 
 ## Cấu trúc hệ thống
 
@@ -175,12 +175,12 @@ loginViewModel.logout()
 
 ## Bảo mật
 
-- ✅ Token được lưu trong EncryptedDataStore
-- ✅ Không log token trong debug
-- ✅ Thread-safe operations
-- ✅ Auto clear token khi hết hạn
-- ✅ Retry mechanism với backoff
-- ✅ Proper error handling
+-  Token được lưu trong EncryptedDataStore
+-  Không log token trong debug
+-  Thread-safe operations
+-  Auto clear token khi hết hạn
+-  Retry mechanism với backoff
+-  Proper error handling
 
 ## Testing
 

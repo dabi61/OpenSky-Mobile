@@ -51,11 +51,11 @@ class SessionStoreImpl(
 
     override suspend fun clear() = update(null)
 
-    // ✅ cái bạn cần: emit ngay + lưu DataStore
+    // cái bạn cần: emit ngay + lưu DataStore
     override suspend fun setUser(user: User?) = mutex.withLock {
         val current = _state.value
         val next = current.copy(user = user)
         ds.write(next)
-        _state.value = next                   // ✅ emit ngay để UI recompose
+        _state.value = next                   // emit ngay để UI recompose
     }
 }

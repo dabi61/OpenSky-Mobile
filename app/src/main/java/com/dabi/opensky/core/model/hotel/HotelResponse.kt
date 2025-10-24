@@ -22,15 +22,24 @@ data class HotelSearchResponse(
 )
 
 @JsonClass(generateAdapter = true)
+// core/model/hotel/HotelSearchRequest.kt
 data class HotelSearchRequest(
     val q: String? = null,
-    val province: String? = null,
-    val address: String? = null,
-    val stars: Int? = null,
-    val minPrice: Double? = null,
-    val maxPrice: Double? = null,
-    val sortBy: String = "name",
-    val sortOrder: String = "asc",
     val page: Int = 1,
-    val limit: Int = 10
+    val limit: Int = 20
+)
+
+
+@JsonClass(generateAdapter = true)
+data class HotelUpdateResponse(
+    @Json(name = "message") val message: String?,
+    @Json(name = "existingImageUrls") val existingImageUrls: List<String> = emptyList(),
+    @Json(name = "newImageUrls") val newImageUrls: List<String> = emptyList(),
+    @Json(name = "deletedImageUrls") val deletedImageUrls: List<String> = emptyList(),
+    @Json(name = "failedUploads") val failedUploads: List<String> = emptyList(),
+    @Json(name = "existingImageCount") val existingImageCount: Int = 0,
+    @Json(name = "newImageCount") val newImageCount: Int = 0,
+    @Json(name = "deletedImageCount") val deletedImageCount: Int = 0,
+    @Json(name = "failedImageCount") val failedImageCount: Int = 0,
+    @Json(name = "totalImageCount") val totalImageCount: Int = 0
 )

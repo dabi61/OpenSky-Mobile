@@ -17,9 +17,9 @@ data class HotelDetailResponse(
     @Json(name = "province")
     val province: String,
     @Json(name = "latitude")
-    val latitude: Int,
+    val latitude: Double?,
     @Json(name = "longitude")
-    val longitude: Int,
+    val longitude: Double?,
     @Json(name = "star")
     val star: Int,
     @Json(name = "status")

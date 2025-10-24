@@ -4,14 +4,15 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.dabi.opensky.core.data.remote.api.LoginService
 import com.dabi.opensky.core.data.remote.model.request.AuthRequest
+import com.dabi.opensky.core.data.remote.model.request.RegisterRequest
 import com.dabi.opensky.core.data.remote.model.response.AuthResponse
+import com.dabi.opensky.core.data.remote.model.response.User
 import com.dabi.opensky.core.data.remote.model.response.toEpochSec
 import com.dabi.opensky.core.session.SessionStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
-
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
@@ -38,6 +39,20 @@ class AuthRepositoryImpl @Inject constructor(
                 )
             )
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun register(fullName: String, email: String, password: String): Result<User> {
+        return try {
+            val res = loginService.register(RegisterRequest(email = email, password = password, fullName = fullName))
+            if (!res.isSuccessful) {
+                return Result.failure(Exception("Register failed: ${res.code()}"))
+            }
+            val user = res.body() ?: return Result.failure(Exception("Empty body"))
+            // Không có token trong response => KHÔNG cập nhật session ở đây.
+            Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }

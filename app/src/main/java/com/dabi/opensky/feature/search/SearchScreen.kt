@@ -4,15 +4,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SearchScreen(
-    modifier: Modifier = Modifier,
-    onHotelClick: (String) -> Unit = {},
-//    hotelViewModel: HotelViewModel = hiltViewModel()
-) {
-
-}
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun SearchScreen(
+//    modifier: Modifier = Modifier,
+//    onHotelClick: (String) -> Unit = {},
+////    hotelViewModel: HotelViewModel = hiltViewModel()
+//) {
+//
+//}
 //    val uiState by hotelViewModel.uiState.collectAsStateWithLifecycle()
 //    val keyboardController = LocalSoftwareKeyboardController.current
 //

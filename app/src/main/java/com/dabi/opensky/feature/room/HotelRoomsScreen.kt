@@ -159,13 +159,13 @@ private fun RoomCard(room: Room, onClick: () -> Unit) {
                 Text(room.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    StatusChip(status = room.status)
+                    StatusChip(status = room.status.toString())
                     Spacer(Modifier.width(8.dp))
-                    CapacityChip(capacity = room.capacity)
+                    CapacityChip(capacity = room.capacity?.toInt() ?: 0)
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = room.price.toVnd(),
+                    text = room.price?.toVnd() ?: "0",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

@@ -30,35 +30,38 @@ import javax.inject.Inject
 data class HotelUiState(
     val hotels: List<Hotel> = emptyList(),
     val featuredHotels: List<Hotel> = emptyList(),
+    val provinces: List<String> = emptyList(),     // NEW: danh sách tỉnh
+
     val isLoading: Boolean = false,
-    val isLoadingMore: Boolean = false,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
+
     val searchQuery: String = "",
     val selectedProvince: String? = null,
     val selectedStars: Int? = null,
-    val minPrice: Double? = null,
-    val maxPrice: Double? = null,
+
     val currentPage: Int = 1,
     val hasNextPage: Boolean = false,
     val totalCount: Int = 0
 )
 
-
 sealed class HotelAction {
     data object LoadAll : HotelAction()
-    data object LoadMore : HotelAction()
     data object Refresh : HotelAction()
-    data class QuickSearch(val query: String) : HotelAction()
+
+    /** Search theo keyword (q) */
+    data class SearchKeyword(val keyword: String?) : HotelAction()
+
+    /** Kết hợp UI filter: keyword / province / stars */
     data class AdvancedSearch(
-        val query: String? = null,
+        val keyword: String? = null,
         val province: String? = null,
-        val stars: Int? = null,
-        val minPrice: Double? = null,
-        val maxPrice: Double? = null
+        val stars: Int? = null
     ) : HotelAction()
-    data class FilterByProvince(val province: String) : HotelAction()
-    data class FilterByProvinceId(val provinceId: Int) : HotelAction()
+
+    /** Load danh sách tỉnh */
+    data object LoadProvinces : HotelAction()
+
     data object ClearError : HotelAction()
 }
 
@@ -73,58 +76,114 @@ class HotelViewModel @Inject constructor(
     private val _state = MutableStateFlow(HotelUiState())
     val state: StateFlow<HotelUiState> = _state.asStateFlow()
 
-    // Expose featured as a StateFlow from VM (VM is the one that shares)
+    // Featured hotels
     val featured: StateFlow<List<Hotel>> = repo.getFeaturedHotels()
         .map { res ->
             when (res) {
                 is Resource.Success -> res.data
                 is Resource.Error -> emptyList()
-                Resource.Loading -> _state.value.featuredHotels // keep last
+                Resource.Loading -> _state.value.featuredHotels
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    // Debounced search text → emits actions
-    private val searchText = MutableStateFlow("")
     init {
-// Single pipeline handling all actions to avoid races
+        // Luồng load provinces 1 lần (không làm vỡ pipeline chính)
+        viewModelScope.launch {
+            repo.getProvinces().collect { res ->
+                when (res) {
+                    is Resource.Success -> _state.update { it.copy(provinces = res.data) }
+                    is Resource.Error -> { /* optional: bỏ qua hoặc log */ }
+                    Resource.Loading -> {}
+                }
+            }
+        }
+
+        // Pipeline xử lý action chính
         viewModelScope.launch {
             actions
                 .onStart { emit(HotelAction.LoadAll) }
                 .flatMapLatest { act ->
                     when (act) {
                         HotelAction.LoadAll -> repo.getAllHotels(page = 1, limit = 20)
-                        HotelAction.LoadMore ->
-                            flowOf(Resource.Error(IllegalStateException("Use Paging3 for load-more")))
-                        is HotelAction.QuickSearch ->
+
+                        is HotelAction.SearchKeyword -> {
+                            _state.update { it.copy(searchQuery = act.keyword.orEmpty(), selectedProvince = null, selectedStars = null) }
                             repo.searchHotels(
                                 HotelSearchRequest(
-                                    q = act.query,
+                                    q = act.keyword?.takeIf { !it.isNullOrBlank() },
                                     page = 1,
                                     limit = 20
                                 )
                             )
-                        is HotelAction.AdvancedSearch ->
-                            repo.searchHotels(
-                                HotelSearchRequest(
-                                    q = act.query,
-                                    province = act.province,
-                                    stars = act.stars,
-                                    minPrice = act.minPrice,
-                                    maxPrice = act.maxPrice,
-                                    page = 1,
-                                    limit = 20
+                        }
+
+                        is HotelAction.AdvancedSearch -> {
+                            // Lưu filter vào state để UI phản ánh
+                            _state.update {
+                                it.copy(
+                                    searchQuery = act.keyword.orEmpty(),
+                                    selectedProvince = act.province,
+                                    selectedStars = act.stars
                                 )
-                            )
-                        is HotelAction.FilterByProvince ->
-                            repo.getHotelsByProvince(act.province, page = 1, limit = 20)
-                        is HotelAction.FilterByProvinceId ->
-                            repo.getHotelsByProvinceId(act.provinceId, page = 1, size = 20)
+                            }
+                            val k = act.keyword?.trim().orEmpty()
+                            when {
+                                // 1) Có keyword -> dùng /hotels/search
+                                k.isNotEmpty() -> repo.searchHotels(
+                                    HotelSearchRequest(q = k, page = 1, limit = 20)
+                                )
+
+                                // 2) Chỉ province -> /hotels/province/{province}
+                                act.province != null && act.stars == null ->
+                                    repo.getHotelsByProvince(act.province, page = 1, size = 20)
+
+                                // 3) Chỉ stars -> /hotels/star/{n}
+                                act.province == null && act.stars != null ->
+                                    repo.getHotelsByStars(act.stars, page = 1, size = 20)
+
+                                // 4) Province + stars -> gọi province rồi lọc client-side theo star
+                                act.province != null && act.stars != null -> flow {
+                                    emit(Resource.Loading)
+                                    repo.getHotelsByProvince(act.province, page = 1, size = 20)
+                                        .collect { res ->
+                                            when (res) {
+                                                is Resource.Success -> {
+                                                    val filtered = res.data.hotels.filter { it.star == act.stars }
+                                                    emit(
+                                                        Resource.Success(
+                                                            res.data.copy(
+                                                                hotels = filtered,
+                                                                totalCount = filtered.size,
+                                                                totalPages = if (filtered.isEmpty()) 0 else 1,
+                                                                hasNextPage = false,
+                                                                hasPreviousPage = false
+                                                            )
+                                                        )
+                                                    )
+                                                }
+                                                is Resource.Error -> emit(Resource.Error(res.cause))
+                                                Resource.Loading -> emit(Resource.Loading)
+                                            }
+                                        }
+                                }
+
+                                // 5) Không gì cả -> load all
+                                else -> repo.getAllHotels(page = 1, limit = 20)
+                            }
+                        }
+
                         HotelAction.Refresh -> flow {
                             _state.update { it.copy(isRefreshing = true) }
                             repo.clearCache()
                             emitAll(repo.getAllHotels(page = 1, limit = 20))
                         }
+
+                        HotelAction.LoadProvinces -> {
+                            // đã có collector riêng ở init; trả về state hiện tại để satisfy type
+                            flowOf(Resource.Success(_state.value.toResponse()))
+                        }
+
                         HotelAction.ClearError -> flowOf(Resource.Success(_state.value.toResponse()))
                     }
                 }
@@ -152,22 +211,22 @@ class HotelViewModel @Inject constructor(
                 }
         }
 
-// Keep featured in state
+        // Đồng bộ featured vào state
         viewModelScope.launch {
             featured.collect { list -> _state.update { it.copy(featuredHotels = list) } }
         }
     }
-    // --- Public API for UI ---
+
+    // --- Public API cho UI ---
     fun onSearchTextChanged(q: String) {
         _state.update { it.copy(searchQuery = q) }
-        searchText.value = q
     }
 
     fun dispatch(action: HotelAction) { actions.tryEmit(action) }
 
     fun clearError() { actions.tryEmit(HotelAction.ClearError) }
 
-    // Helper to adapt UI state to a fake response when clearing error without fetching
+    // Helper: convert state → response để ClearError/No-op action không đổi UI list
     private fun HotelUiState.toResponse(): HotelSearchResponse =
         HotelSearchResponse(
             hotels = hotels,
